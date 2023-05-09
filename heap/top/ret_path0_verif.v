@@ -12,6 +12,14 @@ Include cprogs.heap.top.ret_path0.
 Theorem proof: functional_correctness_statement.
 Proof.
   cbv delta [functional_correctness_statement].
+  intros.
+  Intros.
+  assert (Maxsize >= 2 \/ Maxsize = 1) by lia.
+  destruct H0.
+  + sep_apply list_length ; [ lia | ].
+    Intros.
+    forward.
+  forward.
 Admitted.
 
 End SH_Proof.

@@ -23,5 +23,16 @@ Parameter pop : list Z -> Z -> list Z.
 Parameter pop_length : list Z -> Z -> Z.
 Parameter pop_result : list Z -> Z -> Z.
 
+Lemma list_length: forall (p: val) (l: list Z) (size: Z),
+  !!(size >= 0) && store_int_array p l size |-- !!(Zlength l = size).
+Proof.
+  intros.
+  entailer!.
+  rewrite Zlength_map, Zlength_map.
+  reflexivity.
+Qed.
+
+Print Znth.
+
 Lemma MaxHeap_MaxHeap_p : forall l size, MaxHeap l size -> MaxHeap_p l 1 size.
 Proof. Admitted.
