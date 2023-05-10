@@ -1,5 +1,5 @@
 Require Import FloydSeq.proofauto.
-(* Require Import cprogs.heap.program. *)
+(* Require Import cprogs.heap_list_down.program. *)
 Require Import Notations Logic Datatypes.
 Require Export Coq.Classes.Init.
 (* Require Import Coq.Program.Basics. *)
@@ -43,89 +43,89 @@ Import ListNotations.
 Require Import BinNums.
 Require Coq.micromega.Lia.
 
-Definition state: Type := ((list Z) * nat).
+Definition list_state: Type := ((list Z) * nat).
 
-Definition get_num(l: state): Z := 
+Definition get_list_val(l: list_state): Z := 
   nth ((snd l)) (fst l) 0.
 
-Definition legal_state(l: state): Prop:=
+Definition legal_list_state(l: list_state): Prop:=
   ((snd l) <= (length (fst l)))%nat /\ (1%nat <= (snd l))%nat.
 
 Definition list_up_succeed:
-  state -> state -> Prop :=
-  fun l1 l2 => legal_state l1 /\ legal_state l2 /\
+  list_state -> list_state -> Prop :=
+  fun l1 l2 => legal_list_state l1 /\ legal_list_state l2 /\
     (1%nat < (snd l1))%nat /\ ((snd l2) = (snd l1)/2)%nat /\
-    get_num l1 > (nth (snd l2) (fst l1) 0) /\
+    get_list_val l1 > (nth (snd l2) (fst l1) 0) /\
     (list_swap (snd l1) (snd l2) (fst l1) (fst l2)).
 
 Definition list_up_fail:
-  state -> state -> Prop:=
-  Rels.test(fun l =>  legal_state l /\
+  list_state -> list_state -> Prop:=
+  Rels.test(fun l =>  legal_list_state l /\
     ((1%nat = (snd l))%nat \/
     ((1%nat < (snd l))%nat /\ 
-    get_num l <= (nth ((snd l)/2) (fst l) 0)))).
+    get_list_val l <= (nth ((snd l)/2) (fst l) 0)))).
 
-Fixpoint iter_n_up (n: nat):
-  state -> state -> Prop :=
+Fixpoint iter_n_list_up (n: nat):
+  list_state -> list_state -> Prop :=
   match n with
   | O => list_up_fail
-  | S n0 => list_up_succeed ∘ (iter_n_up n0)
+  | S n0 => list_up_succeed ∘ (iter_n_list_up n0)
   end.
 
-Definition heap_up:
-  state -> state -> Prop :=
-  ⋃ (iter_n_up).
+Definition heap_list_up:
+  list_state -> list_state -> Prop :=
+  ⋃ (iter_n_list_up).
 
-Definition left_son(l: state): state :=
+Definition left_son(l: list_state): list_state :=
   pair (fst l) ((snd l) * 2)%nat.
 
-Definition left_son_swap(l1 l2: state): Prop :=
+Definition left_son_swap(l1 l2: list_state): Prop :=
   (list_swap (snd l1) (snd l2) (fst l1) (fst l2)) /\ ((snd l1) * 2 = (snd l2))%nat.
   
-Definition right_son_swap(l1 l2: state): Prop :=
+Definition right_son_swap(l1 l2: list_state): Prop :=
   (list_swap (snd l1) (snd l2) (fst l1) (fst l2)) /\ ((snd l1) * 2 + 1 = (snd l2))%nat.
 
-Definition right_son(l: state): state :=
+Definition right_son(l: list_state): list_state :=
   pair (fst l) ((snd l) * 2 + 1)%nat.
 
-Definition left_son_check (l: state): Prop :=
-  legal_state (left_son l) /\
-  get_num l < get_num (left_son l).
+Definition left_son_check_list (l: list_state): Prop :=
+  legal_list_state (left_son l) /\
+  get_list_val l < get_list_val (left_son l).
   
-Definition right_son_check (l: state): Prop :=
-  legal_state (right_son l) /\
-  get_num l < get_num (right_son l).
+Definition right_son_check_list (l: list_state): Prop :=
+  legal_list_state (right_son l) /\
+  get_list_val l < get_list_val (right_son l).
 
 Definition list_down_succeed:
-  state -> state -> Prop :=
+  list_state -> list_state -> Prop :=
   fun l1 l2 =>
-    ((left_son_check l1) /\ ~(right_son_check l1) /\ l2 = (left_son l1)) \/
-    ((left_son_check l1) /\ (right_son_check l1) /\ (
-      ((get_num (left_son l1)) > (get_num (right_son l1)) /\ (left_son_swap l1 l2))  \/
-      ((get_num (left_son l1)) <= (get_num (right_son l1)) /\ (right_son_swap l1 l2))
+    ((left_son_check_list l1) /\ ~(right_son_check_list l1) /\ (left_son_swap l1 l2)) \/
+    ((left_son_check_list l1) /\ (right_son_check_list l1) /\ (
+      ((get_list_val (left_son l1)) > (get_list_val (right_son l1)) /\ (left_son_swap l1 l2))  \/
+      ((get_list_val (left_son l1)) <= (get_list_val (right_son l1)) /\ (right_son_swap l1 l2))
     )) \/
-    (~(left_son_check l1) /\ (right_son_check l1) /\ l2 = (left_son l1)).
+    (~(left_son_check_list l1) /\ (right_son_check_list l1) /\ (right_son_swap l1 l2)).
 
 Definition list_down_fail:
-  state -> state -> Prop :=
+  list_state -> list_state -> Prop :=
   Rels.test(fun l =>
-    ~(left_son_check l) /\ ~(right_son_check l)).
+    ~(left_son_check_list l) /\ ~(right_son_check_list l)).
 
-Fixpoint iter_n_down (n: nat):
-  state -> state -> Prop :=
+Fixpoint iter_n_list_down (n: nat):
+  list_state -> list_state -> Prop :=
   match n with
   | O => list_down_fail
-  | S n0 => list_down_succeed ∘ (iter_n_down n0)
+  | S n0 => list_down_succeed ∘ (iter_n_list_down n0)
   end.
 
-Definition heap_down:
-  state -> state -> Prop :=
-  ⋃ (iter_n_down).
+Definition heap_list_down:
+  list_state -> list_state -> Prop :=
+  ⋃ (iter_n_list_down).
 
-Ltac try_unfold_son :=
-  unfold left_son_check; unfold left_son_swap; unfold left_son; 
-  unfold right_son_check; unfold right_son_swap; unfold right_son;
-  unfold get_num; unfold legal_state; simpl.
+Ltac try_list_unfold :=
+  unfold left_son_check_list; unfold left_son_swap; unfold left_son; 
+  unfold right_son_check_list; unfold right_son_swap; unfold right_son;
+  unfold get_list_val; unfold legal_list_state; simpl.
 
 Example test : list_swap 2%nat 1%nat [2; 3; 4; 5] [2; 4; 3; 5].
 Proof.
@@ -147,11 +147,11 @@ Qed.
 Example check_succeed_up : list_up_succeed (pair [233;2; 3; 4; 5] 2%nat) (pair [233;3; 2; 4; 5] 1%nat).
 Proof.
   unfold list_up_succeed.
-  split; [unfold legal_state; simpl; lia|].
-  split; [unfold legal_state; simpl; lia|].
+  split; [unfold legal_list_state; simpl; lia|].
+  split; [unfold legal_list_state; simpl; lia|].
   split; [simpl; lia|].
   split; [simpl; tauto|].
-  split; [unfold get_num; simpl; lia|].
+  split; [unfold get_list_val; simpl; lia|].
   simpl.
   unfold list_swap. unfold length.
   split; [tauto|].
@@ -164,12 +164,12 @@ Proof.
   destruct H; subst; tauto.
 Qed.
 
-Example check_heap_up : heap_up (pair [233;2; 3; 4; 5] 2%nat) (pair [233;3; 2; 4; 5] 1%nat).
+Example check_heap_list_up : heap_list_up (pair [233;2; 3; 4; 5] 2%nat) (pair [233;3; 2; 4; 5] 1%nat).
 Proof.
-  unfold heap_up.
+  unfold heap_list_up.
   unfold_RELS_tac.
   exists 1%nat.
-  unfold iter_n_up.
+  unfold iter_n_list_up.
   unfold_RELS_tac.
   exists (pair [233;3; 2; 4; 5] 1%nat).
   split.
@@ -177,25 +177,25 @@ Proof.
   + unfold list_up_fail.
     simpl.
     split.
-    - split; unfold legal_state; simpl; lia.
+    - split; unfold legal_list_state; simpl; lia.
     - tauto.
 Qed.
 
-Example check_heap_up2 : heap_up (pair [233;100;3;2;5] 4%nat) (pair [233;100;5;2;3] 2%nat).
+Example check_heap_list_up2 : heap_list_up (pair [233;100;3;2;5] 4%nat) (pair [233;100;5;2;3] 2%nat).
 Proof.
-  unfold heap_up.
+  unfold heap_list_up.
   unfold_RELS_tac.
   exists 1%nat.
-  unfold iter_n_up.
+  unfold iter_n_list_up.
   unfold_RELS_tac.
   exists (pair [233;100;5;2;3] 2%nat).
   split.
   + unfold list_up_succeed.
-    split; [unfold legal_state; simpl; lia|].
-    split; [unfold legal_state; simpl; lia|].
+    split; [unfold legal_list_state; simpl; lia|].
+    split; [unfold legal_list_state; simpl; lia|].
     split; [unfold snd; lia|].
     split; [unfold snd; tauto|].
-    split; [unfold get_num; simpl; lia|].
+    split; [unfold get_list_val; simpl; lia|].
     simpl.
     unfold list_swap. unfold length.
     split; [tauto|].
@@ -210,9 +210,9 @@ Proof.
     simpl.
     split.
     - split.
-      unfold legal_state; simpl; lia.
+      unfold legal_list_state; simpl; lia.
       right; split; [lia|].
-      unfold get_num; simpl; lia.
+      unfold get_list_val; simpl; lia.
     - tauto.
 Qed.
 
@@ -220,7 +220,7 @@ Example check_succeed_down : list_down_succeed (pair [233;4;6;9;2;4;1;3] 1%nat) 
 Proof.
   unfold list_down_succeed.
   right; left.
-  split; try_unfold_son; [lia|].
+  split; try_list_unfold; [lia|].
   split; [lia|].
   right; split; [lia|].
   unfold list_swap; unfold length.
@@ -238,17 +238,17 @@ Proof.
 Qed.
 
 
-Example check_heap_down : heap_down (pair [233;4;6;9;2;4;1;3] 1%nat) (pair [233;9;6;4;2;4;1;3] 3%nat).
+Example check_heap_list_down : heap_list_down (pair [233;4;6;9;2;4;1;3] 1%nat) (pair [233;9;6;4;2;4;1;3] 3%nat).
 Proof.
-  unfold heap_down.
+  unfold heap_list_down.
   unfold_RELS_tac.
   exists 1%nat.
-  unfold iter_n_down.
+  unfold iter_n_list_down.
   unfold_RELS_tac.
   exists ([233; 9; 6; 4; 2; 4; 1; 3], 3%nat).
   split.
   + exact check_succeed_down.
   + unfold list_down_fail.
     simpl; split; [|tauto].
-    try_unfold_son; lia.
+    try_list_unfold; lia.
 Qed.
