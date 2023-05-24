@@ -140,7 +140,7 @@ int pop(int *a, int *size) {
 
 int top(int *a) {
   /*@ With Hl Maxsize 
-      Require Maxsize >= 1 && store_int_array(a, Hl, Maxsize)
+      Require Maxsize >= 2 && store_int_array(a, Hl, Maxsize)
       Ensure __return == Vint (IntRepr (Znth(1, Hl))) && store_int_array(a, Hl, Maxsize)
   */
   return a[1];

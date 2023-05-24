@@ -3,7 +3,9 @@ Require Import cprogs.heap.program.
 Require Import cprogs.heap.list_relation.
 
 Require Import Coq.micromega.Psatz.
+Require Import Coq.micromega.Lia.
 Require Import SetsClass.SetsClass.
+Require Import Classical_Prop.
 
 Instance CompSpecs : compspecs. make_compspecs prog. Defined.
 Definition Vprog : varspecs. mk_varspecs prog. Defined.
@@ -115,3 +117,148 @@ Definition pop_result (l: list Z) (size: Z): Z :=
     | _ => 0
   end.
 
+Lemma left_son_check_hold: forall l pos len1 len2,
+  len2 <= len1 -> len2 >= 0 ->
+  ~left_son_check_list (firstn (Z.to_nat len1) l, pos) ->
+  ~left_son_check_list (firstn (Z.to_nat len2) l, pos).
+Proof.
+  unfold left_son_check_list.
+  intros.
+  apply or_not_and.
+  apply not_and_or in H1.
+  destruct H1.
+  + left.
+    revert H1.
+    unfold legal_list_state.
+    simpl fst; simpl snd.
+    rewrite !Zlength_firstn.
+    lia.
+  + assert (pos*2 > len2 - 1 \/ pos*2 <= len2 - 1) by lia.
+    destruct H2.
+    - left.
+      unfold legal_list_state.
+      simpl fst; simpl snd.
+      rewrite !Zlength_firstn.
+      lia.
+    - right.
+      revert H1.
+      unfold get_list_val.
+      simpl fst; simpl snd.
+      intros.
+      pose proof (Zfirstn_firstn l len2 len1 H).
+      rewrite <- H3.
+      assert (pos < len2) by lia.
+      assert (pos * 2 < len2) by lia.
+      pose proof (Znth_firstn (firstn (Z.to_nat len1) l) pos len2 H4).
+      pose proof (Znth_firstn (firstn (Z.to_nat len1) l) (pos*2) len2 H5).
+      rewrite H6, H7.
+      tauto.
+Qed.
+
+Lemma right_son_check_hold: forall l pos len1 len2,
+  len2 <= len1 -> len2 >= 0 ->
+  ~right_son_check_list (firstn (Z.to_nat len1) l, pos) ->
+  ~right_son_check_list (firstn (Z.to_nat len2) l, pos).
+Proof.
+  unfold left_son_check_list.
+  intros.
+  apply or_not_and.
+  apply not_and_or in H1.
+  destruct H1.
+  + left.
+    revert H1.
+    unfold legal_list_state.
+    simpl fst; simpl snd.
+    rewrite !Zlength_firstn.
+    lia.
+  + assert (pos*2+1 > len2 - 1 \/ pos*2+1 <= len2 - 1) by lia.
+    destruct H2.
+    - left.
+      unfold legal_list_state.
+      simpl fst; simpl snd.
+      rewrite !Zlength_firstn.
+      lia.
+    - right.
+      revert H1.
+      unfold get_list_val.
+      simpl fst; simpl snd.
+      intros.
+      pose proof (Zfirstn_firstn l len2 len1 H).
+      rewrite <- H3.
+      assert (pos < len2) by lia.
+      assert (pos*2+1 < len2) by lia.
+      pose proof (Znth_firstn (firstn (Z.to_nat len1) l) pos len2 H4).
+      pose proof (Znth_firstn (firstn (Z.to_nat len1) l) (pos*2+1) len2 H5).
+      rewrite H6, H7.
+      tauto.
+Qed.
+
+Lemma son_check_hold: forall l pos len1 len2,
+  len2 <= len1 -> len2 >= 0 ->
+  ~left_son_check_list (firstn (Z.to_nat len1) l, pos) /\
+  ~right_son_check_list (firstn (Z.to_nat len1) l, pos) ->
+  ~left_son_check_list (firstn (Z.to_nat len2) l, pos) /\ ~right_son_check_list (firstn (Z.to_nat len2) l, pos).
+Proof.
+  intros.
+  destruct H1.
+  split.
+  + apply (left_son_check_hold l pos len1 len2 H H0 H1).
+  + apply (right_son_check_hold l pos len1 len2 H H0 H2).
+Qed.
+
+Lemma MaxHeap_p_coincidence_for_idx: forall l (x1 y1 x2 y2: Z),
+  MaxHeap_p l x1 y1 -> 0 <= x1 <= x2 -> 0 <= y2 <= y1 -> MaxHeap_p l x2 y2.
+Proof.
+  intros.
+  unfold MaxHeap_p in H.
+  unfold MaxHeap_p.
+  intros.
+  apply (son_check_hold l i (y1 + 1) (y2 + 1)); [lia | lia | ].
+  apply H.
+  lia.
+Qed.
+
+(* Search sublist.
+Print sublist. *)
+
+Lemma sublist_eq_ext: forall l l' x y,
+  0 <= x ->
+  (sublist x y l = sublist x y l' <->
+  forall i, x <= i < y -> Znth i l = Znth i l').
+Proof.
+  intros.
+  split.
+  + intros.
+    pose proof (Znth_sublist x (i - x) y l).
+    replace (i - x + x) with i in H2 by lia.
+    rewrite <- H2; [| lia | lia].
+    pose proof (Znth_sublist x (i - x) y l').
+    replace (i - x + x) with i in H3 by lia.
+    rewrite <- H3; [| lia | lia].
+    rewrite H0.
+    reflexivity.
+  +   
+Admitted.
+
+Lemma MaxHeap_p_coincidence_for_list: forall l l' x y,
+  MaxHeap_p l x y ->
+  (forall i, x <= i <= y -> Znth i l = Znth i l') ->
+  MaxHeap_p l' x y.
+Proof. Admitted.
+
+Lemma MaxHeap_up_succeed: forall l l' pos size,
+  Zlength l >= size + 1 -> size >= 1 ->
+  MaxHeap l (pos-1) -> MaxHeap_p l pos size -> list_up_succeed ((firstn (Z.to_nat (size+1)) l),pos) (l',(pos/2))
+  -> MaxHeap l' (pos/2 - 1) /\ MaxHeap_p l' (pos/2) size.
+Proof.
+  intros.
+  unfold list_up_succeed in H3.
+  unfold legal_list_state in H3.
+  simpl fst in H3.
+  simpl snd in H3.
+  rewrite !Zlength_firstn in H3.
+  replace (Z.min (Z.max 0 (size + 1)) (Zlength l)) with (size + 1) in H3 by lia.
+  destruct H3 as [? [?  [? [? [? ?] ] ] ] ].
+  split.
+  +
+Admitted.

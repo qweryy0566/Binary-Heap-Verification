@@ -19,7 +19,7 @@ Definition functional_correctness_statement: Prop :=
   forall (Espec: OracleKind) Hl Maxsize a',
   let Delta_specs := Delta_specs_top in
   let Delta := Delta_top Delta_specs in
-  semax Delta (PROP ((Z.ge Maxsize 1))
+  semax Delta (PROP ((Z.ge Maxsize 2))
   LOCAL (temp _a a')
   SEP ((store_int_array a' Hl Maxsize)))
   (Ssequence

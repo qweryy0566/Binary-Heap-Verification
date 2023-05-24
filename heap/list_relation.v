@@ -49,7 +49,7 @@ Definition get_list_val(l: list_state): Z :=
   Znth ((snd l)) (fst l).
 
 Definition legal_list_state(l: list_state): Prop:=
-  ((snd l) <= Zlength (fst l)) /\ 1 <= (snd l).
+  ((snd l) <= Zlength (fst l) - 1) /\ 1 <= (snd l).
 
 Definition list_up_succeed:
   list_state -> list_state -> Prop :=

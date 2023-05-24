@@ -12,6 +12,9 @@ Include cprogs.heap.up.path1.
 Theorem proof: functional_correctness_statement.
 Proof.
   cbv delta [functional_correctness_statement].
+  intros.
+  Intros Hl0 pos1 a pos.
+  forward.
 Admitted.
 
 End SH_Proof.

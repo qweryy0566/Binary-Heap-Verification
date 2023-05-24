@@ -322,7 +322,7 @@ Definition f_pop_hint (para: GET_PARA_TYPE f_pop_spec_annotation) :=
 
 Definition f_top_spec_annotation :=
   ANNOTATION_WITH Maxsize Hl a',
-  ((PROP ((Z.ge Maxsize 1))
+  ((PROP ((Z.ge Maxsize 2))
   LOCAL (temp _a a')
   SEP ((store_int_array a' Hl Maxsize))),
   (EX a __return,
