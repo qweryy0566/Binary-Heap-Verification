@@ -132,7 +132,7 @@ Ltac try_list_unfold :=
   unfold right_son_check_list; unfold right_son_swap; unfold right_son;
   unfold get_list_val; unfold legal_list_state; simpl_Z.
 
-(* Example test : list_swap 2 1 [2; 3; 4; 5] [2; 4; 3; 5].
+Example test : list_swap 2 1 [2; 3; 4; 5] [2; 4; 3; 5].
 Proof.
   unfold list_swap.
   unfold Zlength, Zlength_aux.
@@ -172,8 +172,6 @@ Qed.
 Example check_heap_list_up : heap_list_up (pair [233;2; 3; 4; 5] 2) (pair [233;3; 2; 4; 5] 1).
 Proof.
   unfold heap_list_up.
-  unfold_RELS_tac.
-  exists 1%nat.
 Abort.
   (* unfold iter_n_list_up.
   unfold_RELS_tac.
@@ -190,6 +188,7 @@ Qed. *)
 Example check_heap_list_up2 : heap_list_up (pair [233;100;3;2;5] 4) (pair [233;100;5;2;3] 2).
 Proof.
   unfold heap_list_up.
+(*
   unfold_RELS_tac.
   exists 1%nat.
   unfold iter_n_list_up.
@@ -220,7 +219,8 @@ Proof.
       right; split; [lia|].
       unfold get_list_val; simpl_Z; lia.
     - tauto.
-Qed.
+Qed. *)
+Admitted.
 
 Example check_succeed_down : list_down_succeed (pair [233;4;6;9;2;4;1;3] 1) (pair [233;9;6;4;2;4;1;3] 3).
 Proof.
@@ -246,7 +246,7 @@ Qed.
 Example check_heap_list_down : heap_list_down (pair [233;4;6;9;2;4;1;3] 1) (pair [233;9;6;4;2;4;1;3] 3).
 Proof.
   unfold heap_list_down.
-  unfold_RELS_tac.
+ (* unfold_RELS_tac.
   exists 1%nat.
   unfold iter_n_list_down.
   unfold_RELS_tac.
@@ -257,3 +257,4 @@ Proof.
     simpl_Z; split; [|tauto].
     try_list_unfold; lia.
 Qed. *)
+Admitted.

@@ -19,7 +19,7 @@ Definition functional_correctness_statement: Prop :=
   forall (Espec: OracleKind) Hl Maxsize size0 pos0,
   let Delta_specs := Delta_specs_down in
   let Delta := Delta_down Delta_specs in
-  semax Delta (EX Hl0 pos1 n a pos size,
+  semax Delta (EX Hl0 pos1 a pos size,
                 (PROP ((MaxHeap_p Hl0 (Z.add pos1 1) size0); (MaxHeap Hl0 pos1); (down Hl size0 pos0 pos1 Hl0); (size = (Vint (IntRepr size0))); (pos = (Vint (IntRepr pos1))); (Z.le pos1 size0))
                 LOCAL (temp _a a; temp _pos pos; temp _size size)
                 SEP ((store_int_array a Hl0 Maxsize))))%assert
@@ -91,7 +91,7 @@ Definition functional_correctness_statement: Prop :=
                           Sskip
                           Sbreak))))))))))))
   (normal_split_assert (RA_normal (frame_ret_assert (function_body_ret_assert tvoid 
-  (EX Hl_final pos1 n a pos size,
+  (EX Hl_final pos1 a pos size,
     (PROP ((MaxHeap Hl_final size0); (down Hl size0 pos0 pos1 Hl_final); (size = (Vint (IntRepr size0))); (pos = (Vint (IntRepr pos1))); (Z.le pos1 size0))
     LOCAL (temp _a a; temp _pos pos; temp _size size)
     SEP ((store_int_array a Hl_final Maxsize))))%assert) (stackframe_of f_down)))).

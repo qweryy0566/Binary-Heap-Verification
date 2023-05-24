@@ -24,7 +24,7 @@ Definition functional_correctness_statement: Prop :=
   SEP ((store_int_array a' Hl Maxsize)))
   Sskip
   (normal_split_assert
-  (EX Hl0 pos1 n a pos,
+  (EX Hl0 pos1 a pos,
     (PROP ((MaxHeap_p Hl0 pos1 size0); (MaxHeap Hl0 (Z.sub pos1 1)); (up Hl size0 pos0 pos1 Hl0); (pos = (Vint (IntRepr pos1))))
     LOCAL (temp _a a; temp _pos pos)
     SEP ((store_int_array a Hl0 Maxsize))))%assert).

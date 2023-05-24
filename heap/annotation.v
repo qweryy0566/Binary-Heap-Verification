@@ -50,7 +50,7 @@ Definition f_up_spec_annotation :=
   ((PROP ((MaxHeap_p Hl pos0 size0); (MaxHeap Hl (Z.sub pos0 1)); (pos' = (Vint (IntRepr pos0))); (Z.le size0 Maxsize); (Z.le 1 size0); (Z.le pos0 size0); (Z.le 1 pos0))
   LOCAL (temp _a a'; temp _pos pos')
   SEP ((store_int_array a' Hl Maxsize))),
-  (EX Hl_final pos1 n a pos,
+  (EX Hl_final pos1 a pos,
     (PROP ((MaxHeap Hl_final size0); (up Hl size0 pos0 pos1 Hl_final); (pos = (Vint (IntRepr pos1))))
     LOCAL (temp _a a; temp _pos pos)
     SEP ((store_int_array a Hl_final Maxsize))))%assert).
@@ -70,7 +70,7 @@ Definition f_up_hint (para: GET_PARA_TYPE f_up_spec_annotation) :=
   (Cloop
     (Csequence
       (Cassert
-        (EX Hl0 pos1 n a pos,
+        (EX Hl0 pos1 a pos,
           (PROP ((MaxHeap_p Hl0 pos1 size0); (MaxHeap Hl0 (Z.sub pos1 1)); (up Hl size0 pos0 pos1 Hl0); (pos = (Vint (IntRepr pos1))))
           LOCAL (temp _a a; temp _pos pos)
           SEP ((store_int_array a Hl0 Maxsize))))%assert)
@@ -116,7 +116,7 @@ Definition f_down_spec_annotation :=
   ((PROP ((MaxHeap_p Hl (Z.add pos0 1) size0); (MaxHeap Hl pos0); (size' = (Vint (IntRepr size0))); (pos' = (Vint (IntRepr pos0))); (Z.le size0 Maxsize); (Z.le 1 size0); (Z.le pos0 size0); (Z.le 1 pos0))
   LOCAL (temp _a a'; temp _pos pos'; temp _size size')
   SEP ((store_int_array a' Hl Maxsize))),
-  (EX Hl_final pos1 n a pos size,
+  (EX Hl_final pos1 a pos size,
     (PROP ((MaxHeap Hl_final size0); (down Hl size0 pos0 pos1 Hl_final); (size = (Vint (IntRepr size0))); (pos = (Vint (IntRepr pos1))); (Z.le pos1 size0))
     LOCAL (temp _a a; temp _pos pos; temp _size size)
     SEP ((store_int_array a Hl_final Maxsize))))%assert).
@@ -136,7 +136,7 @@ Definition f_down_hint (para: GET_PARA_TYPE f_down_spec_annotation) :=
   (Cloop
     (Csequence
       (Cassert
-        (EX Hl0 pos1 n a pos size,
+        (EX Hl0 pos1 a pos size,
           (PROP ((MaxHeap_p Hl0 (Z.add pos1 1) size0); (MaxHeap Hl0 pos1); (down Hl size0 pos0 pos1 Hl0); (size = (Vint (IntRepr size0))); (pos = (Vint (IntRepr pos1))); (Z.le pos1 size0))
           LOCAL (temp _a a; temp _pos pos; temp _size size)
           SEP ((store_int_array a Hl0 Maxsize))))%assert)
