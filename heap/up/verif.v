@@ -6,6 +6,7 @@ Require Import cprogs.heap.annotation.
 Require cprogs.heap.up.path0_verif.
 Require cprogs.heap.up.path1_verif.
 Require cprogs.heap.up.path2_verif.
+Require cprogs.heap.up.path3_verif.
 
 Theorem f_up_functionally_correct :
   semax_body Vprog Gprog f_up up_spec.
@@ -14,4 +15,5 @@ Proof.
   + apply path0_verif.SH_Proof.proof.
   + apply path1_verif.SH_Proof.proof.
   + apply path2_verif.SH_Proof.proof.
-Admitted.
+  + apply path3_verif.SH_Proof.proof.
+Qed.

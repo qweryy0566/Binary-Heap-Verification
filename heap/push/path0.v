@@ -43,6 +43,6 @@ Definition functional_correctness_statement: Prop :=
               ((Etempvar _a (tptr tint)) :: (Etempvar _t'1 tint) :: nil)))))))
   (normal_split_assert (RA_normal (frame_ret_assert (function_body_ret_assert tvoid 
   (EX Hl_final a size val,
-    (PROP ((MaxHeap Hl_final (Z.add size0 1)); (Hl_final = (push Hl size0 val0)); (size = (Vint (IntRepr (Z.add size0 1)))); (val = (Vint (IntRepr val0))))
+    (PROP ((MaxHeap Hl_final (Z.add size0 1)); (push Hl size0 val0 Hl_final); (size = (Vint (IntRepr (Z.add size0 1)))); (val = (Vint (IntRepr val0))))
     LOCAL (temp _a a; temp _size size; temp _val val)
     SEP ((store_int_array a Hl_final Maxsize))))%assert) (stackframe_of f_push)))).

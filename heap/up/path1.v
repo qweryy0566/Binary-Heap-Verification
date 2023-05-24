@@ -20,7 +20,7 @@ Definition functional_correctness_statement: Prop :=
   let Delta_specs := Delta_specs_up in
   let Delta := Delta_up Delta_specs in
   semax Delta (EX Hl0 pos1 n a pos,
-                (PROP ((MaxHeap_p Hl0 (Z.add pos1 1) size0); (MaxHeap Hl0 (Z.sub pos1 1)); (Hl0 = (up Hl size0 pos0 pos1)); (pos1 = (shr pos0 n)); (pos = (Vint (IntRepr pos1))))
+                (PROP ((MaxHeap_p Hl0 pos1 size0); (MaxHeap Hl0 (Z.sub pos1 1)); (up Hl size0 pos0 pos1 Hl0); (pos = (Vint (IntRepr pos1))))
                 LOCAL (temp _a a; temp _pos pos)
                 SEP ((store_int_array a Hl0 Maxsize))))%assert
   (Ssequence
@@ -59,6 +59,6 @@ Definition functional_correctness_statement: Prop :=
                 (Econst_int (Int.repr 1) tint) tint)))))))
   (normal_split_assert
   (EX Hl0 pos1 n a pos,
-    (PROP ((MaxHeap_p Hl0 (Z.add pos1 1) size0); (MaxHeap Hl0 (Z.sub pos1 1)); (Hl0 = (up Hl size0 pos0 pos1)); (pos1 = (shr pos0 n)); (pos = (Vint (IntRepr pos1))))
+    (PROP ((MaxHeap_p Hl0 pos1 size0); (MaxHeap Hl0 (Z.sub pos1 1)); (up Hl size0 pos0 pos1 Hl0); (pos = (Vint (IntRepr pos1))))
     LOCAL (temp _a a; temp _pos pos)
     SEP ((store_int_array a Hl0 Maxsize))))%assert).

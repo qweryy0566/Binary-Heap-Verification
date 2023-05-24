@@ -47,11 +47,11 @@ Definition f_swap_hint (para: GET_PARA_TYPE f_swap_spec_annotation) :=
 
 Definition f_up_spec_annotation :=
   ANNOTATION_WITH size0 pos0 Maxsize Hl a' pos',
-  ((PROP ((MaxHeap_p Hl (Z.add pos0 1) size0); (MaxHeap Hl (Z.sub pos0 1)); (pos' = (Vint (IntRepr pos0))); (Z.le size0 Maxsize); (Z.le 1 size0); (Z.le pos0 size0); (Z.le 1 pos0))
+  ((PROP ((MaxHeap_p Hl pos0 size0); (MaxHeap Hl (Z.sub pos0 1)); (pos' = (Vint (IntRepr pos0))); (Z.le size0 Maxsize); (Z.le 1 size0); (Z.le pos0 size0); (Z.le 1 pos0))
   LOCAL (temp _a a'; temp _pos pos')
   SEP ((store_int_array a' Hl Maxsize))),
   (EX Hl_final pos1 n a pos,
-    (PROP ((MaxHeap Hl_final size0); (Hl_final = (up Hl size0 pos0 pos1)); (pos1 = (shr pos0 n)); (pos = (Vint (IntRepr pos1))))
+    (PROP ((MaxHeap Hl_final size0); (up Hl size0 pos0 pos1 Hl_final); (pos = (Vint (IntRepr pos1))))
     LOCAL (temp _a a; temp _pos pos)
     SEP ((store_int_array a Hl_final Maxsize))))%assert).
 
@@ -71,7 +71,7 @@ Definition f_up_hint (para: GET_PARA_TYPE f_up_spec_annotation) :=
     (Csequence
       (Cassert
         (EX Hl0 pos1 n a pos,
-          (PROP ((MaxHeap_p Hl0 (Z.add pos1 1) size0); (MaxHeap Hl0 (Z.sub pos1 1)); (Hl0 = (up Hl size0 pos0 pos1)); (pos1 = (shr pos0 n)); (pos = (Vint (IntRepr pos1))))
+          (PROP ((MaxHeap_p Hl0 pos1 size0); (MaxHeap Hl0 (Z.sub pos1 1)); (up Hl size0 pos0 pos1 Hl0); (pos = (Vint (IntRepr pos1))))
           LOCAL (temp _a a; temp _pos pos)
           SEP ((store_int_array a Hl0 Maxsize))))%assert)
       (Csequence
@@ -113,11 +113,11 @@ Definition f_up_hint (para: GET_PARA_TYPE f_up_spec_annotation) :=
 
 Definition f_down_spec_annotation :=
   ANNOTATION_WITH size0 pos0 Maxsize Hl a' pos' size',
-  ((PROP ((MaxHeap_p Hl (Z.add pos0 1) size0); (MaxHeap Hl (Z.sub pos0 1)); (size' = (Vint (IntRepr size0))); (pos' = (Vint (IntRepr pos0))); (Z.le size0 Maxsize); (Z.le 1 size0); (Z.le pos0 size0); (Z.le 1 pos0))
+  ((PROP ((MaxHeap_p Hl (Z.add pos0 1) size0); (MaxHeap Hl pos0); (size' = (Vint (IntRepr size0))); (pos' = (Vint (IntRepr pos0))); (Z.le size0 Maxsize); (Z.le 1 size0); (Z.le pos0 size0); (Z.le 1 pos0))
   LOCAL (temp _a a'; temp _pos pos'; temp _size size')
   SEP ((store_int_array a' Hl Maxsize))),
   (EX Hl_final pos1 n a pos size,
-    (PROP ((MaxHeap Hl_final size0); (Hl_final = (down Hl size0 pos0 pos1)); (size = (Vint (IntRepr size0))); (pos0 = (shr pos1 n)); (pos = (Vint (IntRepr pos1))); (Z.le pos1 size0))
+    (PROP ((MaxHeap Hl_final size0); (down Hl size0 pos0 pos1 Hl_final); (size = (Vint (IntRepr size0))); (pos = (Vint (IntRepr pos1))); (Z.le pos1 size0))
     LOCAL (temp _a a; temp _pos pos; temp _size size)
     SEP ((store_int_array a Hl_final Maxsize))))%assert).
 
@@ -137,7 +137,7 @@ Definition f_down_hint (para: GET_PARA_TYPE f_down_spec_annotation) :=
     (Csequence
       (Cassert
         (EX Hl0 pos1 n a pos size,
-          (PROP ((MaxHeap_p Hl0 (Z.add pos1 1) size0); (MaxHeap Hl0 (Z.sub pos1 1)); (Hl0 = (down Hl size0 pos0 pos1)); (size = (Vint (IntRepr size0))); (pos0 = (shr pos1 n)); (pos = (Vint (IntRepr pos1))); (Z.le pos1 size0))
+          (PROP ((MaxHeap_p Hl0 (Z.add pos1 1) size0); (MaxHeap Hl0 pos1); (down Hl size0 pos0 pos1 Hl0); (size = (Vint (IntRepr size0))); (pos = (Vint (IntRepr pos1))); (Z.le pos1 size0))
           LOCAL (temp _a a; temp _pos pos; temp _size size)
           SEP ((store_int_array a Hl0 Maxsize))))%assert)
       (Csequence
@@ -222,7 +222,7 @@ Definition f_push_spec_annotation :=
   LOCAL (temp _a a'; temp _size size'; temp _val val')
   SEP ((store_int_array a' Hl Maxsize))),
   (EX Hl_final a size val,
-    (PROP ((MaxHeap Hl_final (Z.add size0 1)); (Hl_final = (push Hl size0 val0)); (size = (Vint (IntRepr (Z.add size0 1)))); (val = (Vint (IntRepr val0))))
+    (PROP ((MaxHeap Hl_final (Z.add size0 1)); (push Hl size0 val0 Hl_final); (size = (Vint (IntRepr (Z.add size0 1)))); (val = (Vint (IntRepr val0))))
     LOCAL (temp _a a; temp _size size; temp _val val)
     SEP ((store_int_array a Hl_final Maxsize))))%assert).
 
@@ -265,7 +265,7 @@ Definition f_pop_spec_annotation :=
   LOCAL (temp _a a'; temp _size size')
   SEP ((store_int_array a' Hl Maxsize))),
   (EX Hl_final size1 a size __return,
-    (PROP ((MaxHeap Hl_final (Z.add size0 1)); (Hl_final = (pop Hl size0)); (size = (Vint (IntRepr size1))); (size1 = (pop_length Hl size0)); (__return = (Vint (IntRepr (pop_result Hl size0)))))
+    (PROP ((MaxHeap Hl_final size1); (pop Hl size0 Hl_final); (size = (Vint (IntRepr size1))); (size1 = (pop_length Hl size0)); (__return = (Vint (IntRepr (pop_result Hl size0)))))
     LOCAL (temp _a a; temp _size size; temp ___return __return)
     SEP ((store_int_array a Hl_final Maxsize))))%assert).
 
@@ -355,24 +355,24 @@ Definition Gprog : funspecs :=
 
 Notation "'Delta_specs_swap'" := (DELTA_SPECS (f_swap, Vprog, Gprog)).
 
-Notation "'Delta_swap' DS" := (DELTA (f_swap, Vprog, Gprog, @nil (prod ident Annotation), DS)) (at level 99).
+Notation "'Delta_swap' DS" := (DELTA (f_swap, Vprog, Gprog, @nil (ident * Annotation), DS)) (at level 99).
 
 Notation "'Delta_specs_up'" := (DELTA_SPECS (f_up, Vprog, Gprog)).
 
-Notation "'Delta_up' DS" := (DELTA (f_up, Vprog, Gprog, @nil (prod ident Annotation), DS)) (at level 99).
+Notation "'Delta_up' DS" := (DELTA (f_up, Vprog, Gprog, @nil (ident * Annotation), DS)) (at level 99).
 
 Notation "'Delta_specs_down'" := (DELTA_SPECS (f_down, Vprog, Gprog)).
 
-Notation "'Delta_down' DS" := (DELTA (f_down, Vprog, Gprog, @nil (prod ident Annotation), DS)) (at level 99).
+Notation "'Delta_down' DS" := (DELTA (f_down, Vprog, Gprog, @nil (ident * Annotation), DS)) (at level 99).
 
 Notation "'Delta_specs_push'" := (DELTA_SPECS (f_push, Vprog, Gprog)).
 
-Notation "'Delta_push' DS" := (DELTA (f_push, Vprog, Gprog, @nil (prod ident Annotation), DS)) (at level 99).
+Notation "'Delta_push' DS" := (DELTA (f_push, Vprog, Gprog, @nil (ident * Annotation), DS)) (at level 99).
 
 Notation "'Delta_specs_pop'" := (DELTA_SPECS (f_pop, Vprog, Gprog)).
 
-Notation "'Delta_pop' DS" := (DELTA (f_pop, Vprog, Gprog, @nil (prod ident Annotation), DS)) (at level 99).
+Notation "'Delta_pop' DS" := (DELTA (f_pop, Vprog, Gprog, @nil (ident * Annotation), DS)) (at level 99).
 
 Notation "'Delta_specs_top'" := (DELTA_SPECS (f_top, Vprog, Gprog)).
 
-Notation "'Delta_top' DS" := (DELTA (f_top, Vprog, Gprog, @nil (prod ident Annotation), DS)) (at level 99).
+Notation "'Delta_top' DS" := (DELTA (f_top, Vprog, Gprog, @nil (ident * Annotation), DS)) (at level 99).

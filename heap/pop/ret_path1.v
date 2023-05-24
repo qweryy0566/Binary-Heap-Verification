@@ -61,6 +61,6 @@ Definition functional_correctness_statement: Prop :=
                     (Sreturn (Some (Econst_int (Int.repr 0) tint))))))))))))
   (return_split_assert (RA_return (frame_ret_assert (function_body_ret_assert tint 
   (EX Hl_final size1 a size __return,
-    (PROP ((MaxHeap Hl_final (Z.add size0 1)); (Hl_final = (pop Hl size0)); (size = (Vint (IntRepr size1))); (size1 = (pop_length Hl size0)); (__return = (Vint (IntRepr (pop_result Hl size0)))))
+    (PROP ((MaxHeap Hl_final size1); (pop Hl size0 Hl_final); (size = (Vint (IntRepr size1))); (size1 = (pop_length Hl size0)); (__return = (Vint (IntRepr (pop_result Hl size0)))))
     LOCAL (temp _a a; temp _size size; temp ___return __return)
     SEP ((store_int_array a Hl_final Maxsize))))%assert) (stackframe_of f_pop)))).

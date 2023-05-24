@@ -13,6 +13,10 @@ Require cprogs.heap.down.path6_verif.
 Require cprogs.heap.down.path7_verif.
 Require cprogs.heap.down.path8_verif.
 Require cprogs.heap.down.path9_verif.
+Require cprogs.heap.down.path10_verif.
+Require cprogs.heap.down.path11_verif.
+Require cprogs.heap.down.path12_verif.
+Require cprogs.heap.down.path13_verif.
 
 Theorem f_down_functionally_correct :
   semax_body Vprog Gprog f_down down_spec.
@@ -28,4 +32,8 @@ Proof.
   + apply path7_verif.SH_Proof.proof.
   + apply path8_verif.SH_Proof.proof.
   + apply path9_verif.SH_Proof.proof.
-Admitted.
+  + apply path10_verif.SH_Proof.proof.
+  + apply path11_verif.SH_Proof.proof.
+  + apply path12_verif.SH_Proof.proof.
+  + apply path13_verif.SH_Proof.proof.
+Qed.

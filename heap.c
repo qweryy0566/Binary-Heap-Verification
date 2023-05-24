@@ -18,23 +18,21 @@ void up(int *a, int pos) {
         1 <= pos0 && pos0 <= size0 &&
         1 <= size0 && size0 <= Maxsize &&   
         pos == Vint (IntRepr (pos0)) &&  
-        MaxHeap(Hl, pos0 - 1) && MaxHeap_p(Hl, pos0 + 1, size0) &&
+        MaxHeap(Hl, pos0 - 1) && MaxHeap_p(Hl, pos0, size0) &&
         store_int_array(a, Hl, Maxsize)
       Ensure 
         exists Hl_final pos1 n,
-          pos == Vint (IntRepr (pos1)) &&
-          pos1 == shr(pos0, n) &&  
-          Hl_final == up(Hl, size0, pos0, pos1) && 
+          pos == Vint (IntRepr (pos1)) && 
+          up(Hl, size0, pos0, pos1, Hl_final) && 
           MaxHeap(Hl_final, size0) && 
           store_int_array(a, Hl_final, Maxsize)
   */
 
   /*@ Inv
         exists Hl0 pos1 n, 
-          pos == Vint (IntRepr (pos1)) && 
-          pos1 == shr(pos0, n) &&  
-          Hl0 == up(Hl, size0, pos0, pos1) &&
-          MaxHeap(Hl0, pos1 - 1) && MaxHeap_p(Hl0, pos1 + 1, size0) &&  
+          pos == Vint (IntRepr (pos1)) &&  
+          up(Hl, size0, pos0, pos1, Hl0) &&
+          MaxHeap(Hl0, pos1 - 1) && MaxHeap_p(Hl0, pos1, size0) &&  
           store_int_array(a, Hl0, Maxsize)
   */
   while (pos > 1) {
@@ -53,15 +51,14 @@ void down(int *a, int size, int pos) {
         1 <= size0 && size0 <= Maxsize && 
         pos == Vint (IntRepr (pos0)) && 
         size == Vint (IntRepr (size0)) &&  
-        MaxHeap(Hl, pos0 - 1) && MaxHeap_p(Hl, pos0 + 1, size0) &&
+        MaxHeap(Hl, pos0) && MaxHeap_p(Hl, pos0 + 1, size0) &&
         store_int_array(a, Hl, Maxsize)
       Ensure 
         exists Hl_final pos1 n,
           pos1 <= size0 && 
           pos == Vint (IntRepr (pos1)) &&
-          pos0 == shr(pos1, n) &&
           size == Vint (IntRepr (size0)) &&  
-          Hl_final == down(Hl, size0, pos0, pos1) && 
+          down(Hl, size0, pos0, pos1, Hl_final) && 
           MaxHeap(Hl_final, size0) && 
           store_int_array(a, Hl_final, Maxsize)
   */
@@ -70,10 +67,9 @@ void down(int *a, int size, int pos) {
         exists Hl0 pos1 n, 
           pos1 <= size0 && 
           pos == Vint (IntRepr (pos1)) && 
-          pos0 == shr(pos1, n) && 
           size == Vint (IntRepr (size0)) && 
-          Hl0 == down(Hl, size0, pos0, pos1) &&
-          MaxHeap(Hl0, pos1 - 1) && MaxHeap_p(Hl0, pos1 + 1, size0) &&  
+          down(Hl, size0, pos0, pos1, Hl0) &&
+          MaxHeap(Hl0, pos1) && MaxHeap_p(Hl0, pos1 + 1, size0) &&  
           store_int_array(a, Hl0, Maxsize)
   */
   while (pos << 1 <= size) {
@@ -107,7 +103,7 @@ void push(int *a, int *size, int val) {
         exists Hl_final,
           val == Vint (IntRepr (val0)) && 
           size == Vint (IntRepr (size0 + 1)) && 
-          Hl_final == push(Hl, size0, val0) && 
+          push(Hl, size0, val0, Hl_final) && 
           MaxHeap(Hl_final, size0 + 1) && 
           store_int_array(a, Hl_final, Maxsize)
   */
@@ -128,8 +124,8 @@ int pop(int *a, int *size) {
           __return == Vint (IntRepr (pop_result(Hl, size0))) && 
           size1 == pop_length(Hl, size0) && 
           size == Vint (IntRepr (size1)) && 
-          Hl_final == pop(Hl, size0) && 
-          MaxHeap(Hl_final, size0 + 1) && 
+          pop(Hl, size0, Hl_final) && 
+          MaxHeap(Hl_final, size1) && 
           store_int_array(a, Hl_final, Maxsize)
   */
   if (*size == 0)

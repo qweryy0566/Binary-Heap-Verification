@@ -25,7 +25,8 @@ INCLUDE_ACLIGHT = -Q $(VSTADIR)/csplit Csplit -Q $(VSTADIR)/floyd-seq FloydSeq -
 INCLUDE_COMPCERT = -R $(COMPCERTDIR) compcert
 INCLUDE_VST = $(foreach d, $(VST_DIRS), -Q $(VSTDIR)/$(d) VST.$(d))
 INCLUDE_UTIL = -Q $(VSTADIR)/utils utils
-COQFLAGS = -w -omega-is-deprecated $(INCLUDE_ACLIGHT) $(INCLUDE_VST) $(INCLUDE_COMPCERT) $(INCLUDE_UTIL)
+INCLUDE_SETS = -Q ../sets SetsClass 
+COQFLAGS = -w -omega-is-deprecated $(INCLUDE_ACLIGHT) $(INCLUDE_VST) $(INCLUDE_COMPCERT) $(INCLUDE_UTIL) $(INCLUDE_SETS)
 
 FILES =  \
   $(CPROG_FILES) $(CDEF_FILES) $(CANNOT_FILES) \
