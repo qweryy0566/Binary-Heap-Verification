@@ -10,18 +10,18 @@ Require Import Csplit.strongSoundness.
 Require Import Csplit.AClightFunc.
 Local Open Scope Z_scope.
 Import AClightNotations.
-Require Import cprogs.heap.program.
-Require Import cprogs.heap.definitions.
-Require Import cprogs.heap.annotation.
+Require Import heap.program.
+Require Import heap.definitions.
+Require Import heap.annotation.
 Import compcert.cfrontend.Clight.
 
 Definition functional_correctness_statement: Prop :=
-  forall (Espec: OracleKind) Hl Maxsize a',
+  forall (Espec: OracleKind) Hl Maxsize a0 a',
   let Delta_specs := Delta_specs_top in
   let Delta := Delta_top Delta_specs in
-  semax Delta (PROP ((Z.ge Maxsize 2))
+  semax Delta (PROP ((Z.le Maxsize (Int.max_signed )); (Z.le 2 Maxsize); (a' = a0))
   LOCAL (temp _a a')
-  SEP ((store_int_array a' Hl Maxsize)))
+  SEP ((store_int_array a0 Hl Maxsize)))
   (Ssequence
     (Sset _t'1
       (Ederef
@@ -29,7 +29,7 @@ Definition functional_correctness_statement: Prop :=
           (tptr tint)) tint))
     (Sreturn (Some (Etempvar _t'1 tint))))
   (return_split_assert (RA_return (frame_ret_assert (function_body_ret_assert tint 
-  (EX a __return,
+  (EX __return,
     (PROP ((__return = (Vint (IntRepr (Znth 1 Hl)))))
-    LOCAL (temp _a a; temp ___return __return)
-    SEP ((store_int_array a Hl Maxsize))))%assert) (stackframe_of f_top)))).
+    LOCAL (temp ___return __return)
+    SEP ((store_int_array a0 Hl Maxsize))))%assert) (stackframe_of f_top)))).

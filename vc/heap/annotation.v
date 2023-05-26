@@ -10,8 +10,8 @@ Require Import Csplit.strongSoundness.
 Require Import Csplit.AClightFunc.
 Local Open Scope Z_scope.
 Import AClightNotations.
-Require Import cprogs.heap.program.
-Require Import cprogs.heap.definitions.
+Require Import heap.program.
+Require Import heap.definitions.
 Definition ___return := ret_temp.
 
 Definition f_swap_spec_annotation :=
@@ -46,14 +46,14 @@ Definition f_swap_hint (para: GET_PARA_TYPE f_swap_spec_annotation) :=
 
 
 Definition f_up_spec_annotation :=
-  ANNOTATION_WITH size0 pos0 Maxsize Hl a' pos',
-  ((PROP ((MaxHeap_p Hl pos0 size0); (MaxHeap Hl (Z.sub pos0 1)); (pos' = (Vint (IntRepr pos0))); (Z.le size0 Maxsize); (Z.le 1 size0); (Z.le pos0 size0); (Z.le 1 pos0))
+  ANNOTATION_WITH size0 pos0 a0 Maxsize Hl a' pos',
+  ((PROP ((pos' = (Vint (IntRepr pos0))); (a' = a0); (Z.le (Z.add size0 1) Maxsize); (Z.le 1 size0); (Z.le pos0 size0); (Z.le 1 pos0); (Z.le Maxsize (Int.max_signed )); (Z.le 2 Maxsize); (all_int Hl))
   LOCAL (temp _a a'; temp _pos pos')
-  SEP ((store_int_array a' Hl Maxsize))),
-  (EX Hl_final pos1 a pos,
-    (PROP ((MaxHeap Hl_final size0); (up Hl size0 pos0 pos1 Hl_final); (pos = (Vint (IntRepr pos1))))
-    LOCAL (temp _a a; temp _pos pos)
-    SEP ((store_int_array a Hl_final Maxsize))))%assert).
+  SEP ((store_int_array a0 Hl Maxsize))),
+  (EX Hl_final pos1 pos,
+    (PROP ((up Hl size0 pos0 pos1 Hl_final); (pos = (Vint (IntRepr pos1))))
+    LOCAL (temp _pos pos)
+    SEP ((store_int_array a0 Hl_final Maxsize))))%assert).
 
 Definition f_up_spec_complex :=
   ltac:(uncurry_funcspec f_up_spec_annotation).
@@ -66,14 +66,14 @@ Definition up_spec :=
 
 Definition f_up_hint (para: GET_PARA_TYPE f_up_spec_annotation) :=
   match para with
-  | (size0, pos0, Maxsize, Hl, a', pos') =>
+  | (size0, pos0, a0, Maxsize, Hl, a', pos') =>
   (Cloop
     (Csequence
       (Cassert
         (EX Hl0 pos1 a pos,
-          (PROP ((MaxHeap_p Hl0 pos1 size0); (MaxHeap Hl0 (Z.sub pos1 1)); (up Hl size0 pos0 pos1 Hl0); (pos = (Vint (IntRepr pos1))))
+          (PROP ((up Hl size0 pos0 pos1 Hl0); (pos = (Vint (IntRepr pos1))); (a = a0); (Z.le pos1 size0); (Z.le 1 pos1); (Z.le (Z.add size0 1) Maxsize); (Z.le 1 size0); (Z.le pos0 size0); (Z.le 1 pos0); (Z.le Maxsize (Int.max_signed )); (Z.le 2 Maxsize); (all_int Hl))
           LOCAL (temp _a a; temp _pos pos)
-          SEP ((store_int_array a Hl0 Maxsize))))%assert)
+          SEP ((store_int_array a0 Hl0 Maxsize))))%assert)
       (Csequence
         (Cifthenelse (Ebinop Ogt (Etempvar _pos tint)
                        (Econst_int (Int.repr 1) tint) tint)
@@ -112,14 +112,14 @@ Definition f_up_hint (para: GET_PARA_TYPE f_up_spec_annotation) :=
 
 
 Definition f_down_spec_annotation :=
-  ANNOTATION_WITH size0 pos0 Maxsize Hl a' pos' size',
-  ((PROP ((MaxHeap_p Hl (Z.add pos0 1) size0); (MaxHeap Hl pos0); (size' = (Vint (IntRepr size0))); (pos' = (Vint (IntRepr pos0))); (Z.le size0 Maxsize); (Z.le 1 size0); (Z.le pos0 size0); (Z.le 1 pos0))
+  ANNOTATION_WITH size0 pos0 a0 Maxsize Hl a' pos' size',
+  ((PROP ((size' = (Vint (IntRepr size0))); (pos' = (Vint (IntRepr pos0))); (a' = a0); (Z.le (Z.add size0 1) Maxsize); (Z.le 1 size0); (Z.le pos0 size0); (Z.le 1 pos0); (Z.le Maxsize (Int.max_signed )); (Z.le 2 Maxsize); (all_int Hl))
   LOCAL (temp _a a'; temp _pos pos'; temp _size size')
-  SEP ((store_int_array a' Hl Maxsize))),
-  (EX Hl_final pos1 a pos size,
-    (PROP ((MaxHeap Hl_final size0); (down Hl size0 pos0 pos1 Hl_final); (size = (Vint (IntRepr size0))); (pos = (Vint (IntRepr pos1))); (Z.le pos1 size0))
-    LOCAL (temp _a a; temp _pos pos; temp _size size)
-    SEP ((store_int_array a Hl_final Maxsize))))%assert).
+  SEP ((store_int_array a0 Hl Maxsize))),
+  (EX Hl_final pos1,
+    (PROP ((down Hl size0 pos0 pos1 Hl_final); (Z.le pos1 size0))
+    LOCAL ()
+    SEP ((store_int_array a0 Hl_final Maxsize))))%assert).
 
 Definition f_down_spec_complex :=
   ltac:(uncurry_funcspec f_down_spec_annotation).
@@ -132,14 +132,14 @@ Definition down_spec :=
 
 Definition f_down_hint (para: GET_PARA_TYPE f_down_spec_annotation) :=
   match para with
-  | (size0, pos0, Maxsize, Hl, a', pos', size') =>
+  | (size0, pos0, a0, Maxsize, Hl, a', pos', size') =>
   (Cloop
     (Csequence
       (Cassert
         (EX Hl0 pos1 a pos size,
-          (PROP ((MaxHeap_p Hl0 (Z.add pos1 1) size0); (MaxHeap Hl0 pos1); (down Hl size0 pos0 pos1 Hl0); (size = (Vint (IntRepr size0))); (pos = (Vint (IntRepr pos1))); (Z.le pos1 size0))
+          (PROP ((down Hl size0 pos0 pos1 Hl0); (size = (Vint (IntRepr size0))); (pos = (Vint (IntRepr pos1))); (Z.le pos1 size0); (a = a0); (Z.le pos1 size0); (Z.le 1 pos1); (Z.le (Z.add size0 1) Maxsize); (Z.le 1 size0); (Z.le pos0 size0); (Z.le 1 pos0); (Z.le Maxsize (Int.max_signed )); (Z.le 2 Maxsize); (all_int Hl))
           LOCAL (temp _a a; temp _pos pos; temp _size size)
-          SEP ((store_int_array a Hl0 Maxsize))))%assert)
+          SEP ((store_int_array a0 Hl0 Maxsize))))%assert)
       (Csequence
         (Cifthenelse (Ebinop Ole
                        (Ebinop Oshl (Etempvar _pos tint)
@@ -217,14 +217,14 @@ Definition f_down_hint (para: GET_PARA_TYPE f_down_spec_annotation) :=
 
 
 Definition f_push_spec_annotation :=
-  ANNOTATION_WITH val0 size0 Maxsize Hl a' size' val',
-  ((PROP ((MaxHeap Hl size0); (size' = (Vint (IntRepr size0))); (val' = (Vint (IntRepr val0))); (Z.lt size0 Maxsize); (Z.le 0 size0))
+  ANNOTATION_WITH val0 size_p size0 a0 Maxsize Hl a' size' val',
+  ((PROP ((size' = size_p); (val' = (Vint (IntRepr val0))); (a0 = a'); (Z.le (Z.add (Z.add size0 1) 1) Maxsize); (Z.le 0 size0); (Z.le Maxsize (Int.max_signed )); (Z.le 1 Maxsize); (all_int Hl))
   LOCAL (temp _a a'; temp _size size'; temp _val val')
-  SEP ((store_int_array a' Hl Maxsize))),
-  (EX Hl_final a size val,
-    (PROP ((MaxHeap Hl_final (Z.add size0 1)); (push Hl size0 val0 Hl_final); (size = (Vint (IntRepr (Z.add size0 1)))); (val = (Vint (IntRepr val0))))
-    LOCAL (temp _a a; temp _size size; temp _val val)
-    SEP ((store_int_array a Hl_final Maxsize))))%assert).
+  SEP ((store_int_array a0 Hl Maxsize); (store_int size_p size0))),
+  (EX Hl_final size val,
+    (PROP ((push Hl size0 val0 Hl_final); (size = size_p); (val = (Vint (IntRepr val0))))
+    LOCAL (temp _size size; temp _val val)
+    SEP ((store_int_array a0 Hl_final Maxsize); (store_int size_p (Z.add size0 1)))))%assert).
 
 Definition f_push_spec_complex :=
   ltac:(uncurry_funcspec f_push_spec_annotation).
@@ -237,7 +237,7 @@ Definition push_spec :=
 
 Definition f_push_hint (para: GET_PARA_TYPE f_push_spec_annotation) :=
   match para with
-  | (val0, size0, Maxsize, Hl, a', size', val') =>
+  | (val0, size_p, size0, a0, Maxsize, Hl, a', size', val') =>
   (Csequence
     (Csequence
       (Cset _t'3 (Ederef (Etempvar _size (tptr tint)) tint))
@@ -260,14 +260,14 @@ Definition f_push_hint (para: GET_PARA_TYPE f_push_spec_annotation) :=
 
 
 Definition f_pop_spec_annotation :=
-  ANNOTATION_WITH size0 Maxsize Hl a' size',
-  ((PROP ((MaxHeap Hl size0); (size' = (Vint (IntRepr size0))); (Z.le size0 Maxsize); (Z.le 0 size0))
+  ANNOTATION_WITH size_p size0 a0 Maxsize Hl a' size',
+  ((PROP ((size' = size_p); (a' = a0); (Z.le (Z.add size0 1) Maxsize); (Z.le 0 size0); (Z.le Maxsize (Int.max_signed )); (Z.le 1 Maxsize); (all_int Hl))
   LOCAL (temp _a a'; temp _size size')
-  SEP ((store_int_array a' Hl Maxsize))),
-  (EX Hl_final size1 a size __return,
-    (PROP ((MaxHeap Hl_final size1); (pop Hl size0 Hl_final); (size = (Vint (IntRepr size1))); (size1 = (pop_length Hl size0)); (__return = (Vint (IntRepr (pop_result Hl size0)))))
-    LOCAL (temp _a a; temp _size size; temp ___return __return)
-    SEP ((store_int_array a Hl_final Maxsize))))%assert).
+  SEP ((store_int_array a0 Hl Maxsize); (store_int size_p size0))),
+  (EX Hl_final size1 __return,
+    (PROP ((pop Hl size0 Hl_final); (size1 = (pop_length Hl size0)); (__return = (Vint (IntRepr (pop_result Hl size0)))))
+    LOCAL (temp ___return __return)
+    SEP ((store_int_array a0 Hl_final Maxsize); (store_int size_p size1))))%assert).
 
 Definition f_pop_spec_complex :=
   ltac:(uncurry_funcspec f_pop_spec_annotation).
@@ -280,7 +280,7 @@ Definition pop_spec :=
 
 Definition f_pop_hint (para: GET_PARA_TYPE f_pop_spec_annotation) :=
   match para with
-  | (size0, Maxsize, Hl, a', size') =>
+  | (size_p, size0, a0, Maxsize, Hl, a', size') =>
   (Csequence
     (Csequence
       (Cset _t'5 (Ederef (Etempvar _size (tptr tint)) tint))
@@ -321,14 +321,14 @@ Definition f_pop_hint (para: GET_PARA_TYPE f_pop_spec_annotation) :=
 
 
 Definition f_top_spec_annotation :=
-  ANNOTATION_WITH Maxsize Hl a',
-  ((PROP ((Z.ge Maxsize 2))
+  ANNOTATION_WITH a0 Maxsize Hl a',
+  ((PROP ((Z.le Maxsize (Int.max_signed )); (Z.le 2 Maxsize); (a' = a0))
   LOCAL (temp _a a')
-  SEP ((store_int_array a' Hl Maxsize))),
-  (EX a __return,
+  SEP ((store_int_array a0 Hl Maxsize))),
+  (EX __return,
     (PROP ((__return = (Vint (IntRepr (Znth 1 Hl)))))
-    LOCAL (temp _a a; temp ___return __return)
-    SEP ((store_int_array a Hl Maxsize))))%assert).
+    LOCAL (temp ___return __return)
+    SEP ((store_int_array a0 Hl Maxsize))))%assert).
 
 Definition f_top_spec_complex :=
   ltac:(uncurry_funcspec f_top_spec_annotation).
@@ -341,7 +341,7 @@ Definition top_spec :=
 
 Definition f_top_hint (para: GET_PARA_TYPE f_top_spec_annotation) :=
   match para with
-  | (Maxsize, Hl, a') =>
+  | (a0, Maxsize, Hl, a') =>
   (Csequence
     (Cset _t'1
       (Ederef

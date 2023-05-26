@@ -1,23 +1,22 @@
 Require Import utils.VSTALib.
 
-Require Import cprogs.heap.program.
-Require Import cprogs.heap.definitions.
-Require Import cprogs.heap.annotation.
-Require cprogs.heap.up.path0.
+Require Import heap.program.
+Require Import heap.definitions.
+Require Import heap.annotation.
+Require heap.up.path0.
 
 Module SH_Proof <: STRAIGHTLINE_HOARE_TRIPLE_PROOF.
 
-Include cprogs.heap.up.path0.
+Include heap.up.path0.
 
 Theorem proof: functional_correctness_statement.
 Proof.
   cbv delta [functional_correctness_statement].
-  intros; Intros.
+  intros; Intros; subst.
   forward.
-  Exists Hl pos0 a' (Vint (IntRepr pos0)).
+  Exists Hl pos0 a0 (Vint (IntRepr pos0)).
   entailer!.
-  unfold up.
-  unfold list_relation.heap_list_up.
+  unfold up, list_relation.heap_list_up.
   exists 0%nat.
   unfold RelsDomain.nsteps.
   reflexivity.

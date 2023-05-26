@@ -84,10 +84,10 @@ Definition pop_result (l: list Z) (size: Z): Z :=
     | _ => 0
   end.
 
-Fixpoint all_nonneg (l: list Z): Prop :=
+Fixpoint all_int (l: list Z): Prop :=
   match l with
   | nil => True
-  | h :: l0 => 0 <= h <= Int.max_signed /\ all_nonneg l0
+  | h :: l0 => Int.min_signed <= h <= Int.max_signed /\ all_int l0
   end.
 
 Lemma left_son_check_hold: forall l pos len1 len2,
