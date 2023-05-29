@@ -19,7 +19,7 @@ Definition functional_correctness_statement: Prop :=
   forall (Espec: OracleKind) Hl Maxsize size0 size_p val0 a0 a' size' val',
   let Delta_specs := Delta_specs_push in
   let Delta := Delta_push Delta_specs in
-  semax Delta (PROP ((size' = size_p); (val' = (Vint (IntRepr val0))); (a0 = a'); (Z.le (Z.add (Z.add size0 1) 1) Maxsize); (Z.le 0 size0); (Z.le Maxsize (Int.max_signed )); (Z.le 1 Maxsize); (all_int Hl))
+  semax Delta (PROP ((size' = size_p); (val' = (Vint (IntRepr val0))); (a0 = a'); (Z.le (Z.add (Z.add size0 1) 1) Maxsize); (Z.le 0 size0); (Z.le Maxsize (Int.max_signed )); (Z.le 1 Maxsize); (Z.le val0 (Int.max_signed )); (Z.le (Int.min_signed ) val0); (all_int Hl))
   LOCAL (temp _a a'; temp _size size'; temp _val val')
   SEP ((store_int_array a0 Hl Maxsize); (store_int size_p size0)))
   (Ssequence
@@ -42,7 +42,7 @@ Definition functional_correctness_statement: Prop :=
                           tvoid cc_default))
               ((Etempvar _a (tptr tint)) :: (Etempvar _t'1 tint) :: nil)))))))
   (normal_split_assert (RA_normal (frame_ret_assert (function_body_ret_assert tvoid 
-  (EX Hl_final size val,
-    (PROP ((push Hl size0 val0 Hl_final); (size = size_p); (val = (Vint (IntRepr val0))))
-    LOCAL (temp _size size; temp _val val)
+  (EX Hl_final,
+    (PROP ((push Hl size0 val0 Hl_final))
+    LOCAL ()
     SEP ((store_int_array a0 Hl_final Maxsize); (store_int size_p (Z.add size0 1)))))%assert) (stackframe_of f_push)))).

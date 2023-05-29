@@ -46,23 +46,21 @@ Proof.
   reflexivity.
 Qed.
 
-
-Definition MaxHeap_p (l: list Z) (lo hi: Z): Prop :=
-  True.
-  (* forall (i: Z), lo <= i <= hi ->
-    ~(left_son_check_list ((firstn (Z.to_nat (hi + 1)) l), i)) /\ ~(right_son_check_list ((firstn (Z.to_nat (hi + 1)) l), i)). *)
-
-Definition MaxHeap (l: list Z) (size: Z): Prop :=
-  True.
-  (* MaxHeap_p l 1 size. *)
-
 Definition up: list Z -> Z -> Z -> Z -> list Z -> Prop :=
   fun l size p0 p1 l' =>
     heap_list_up ((firstn (Z.to_nat (size + 1)) l), p0) ((firstn (Z.to_nat (size + 1)) l'), p1).
 
+Definition up_inv: list Z -> Z -> Z -> Z -> list Z -> Prop :=
+  fun l size p0 p1 l' =>
+    (clos_refl_trans list_up_succeed) ((firstn (Z.to_nat (size + 1)) l), p0) ((firstn (Z.to_nat (size + 1)) l'), p1).
+
 Definition down: list Z -> Z -> Z -> Z -> list Z -> Prop :=
   fun l size p0 p1 l' =>
     heap_list_down ((firstn (Z.to_nat (size + 1)) l), p0) ((firstn (Z.to_nat (size + 1)) l'), p1).
+
+Definition down_inv: list Z -> Z -> Z -> Z -> list Z -> Prop :=
+  fun l size p0 p1 l' =>
+    (clos_refl_trans list_down_succeed) ((firstn (Z.to_nat (size + 1)) l), p0) ((firstn (Z.to_nat (size + 1)) l'), p1).
 
 Definition push: list Z -> Z -> Z -> list Z -> Prop :=
   fun l size val l' =>

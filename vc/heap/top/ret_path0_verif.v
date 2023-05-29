@@ -15,9 +15,8 @@ Proof.
   intros; Intros; subst.
   sep_apply list_length; [lia|].
   Intros.
-  forward.
-  forward.
-  Exists (Vint (IntRepr (Znth 1 Hl))).
+  forward. forward.
+  Exists  (Vint (IntRepr (Znth 1 Hl))).
   entailer!.
 Qed.
 

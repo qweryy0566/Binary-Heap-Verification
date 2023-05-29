@@ -14,7 +14,7 @@ Proof.
   cbv delta [functional_correctness_statement].
   intros; Intros; subst.
   forward. forward. forward.
-  Exists Hl 0 (Vint (IntRepr (- (1)))).
+  Exists Hl 0 (Vint (IntRepr (-1))).
   entailer!.
   unfold pop.
   left.

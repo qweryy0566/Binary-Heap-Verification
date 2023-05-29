@@ -22,7 +22,6 @@ void up(int *a, int pos) {
         store_int_array(a0, Hl, Maxsize)
       Ensure 
         exists Hl_final pos1,
-          pos == Vint (IntRepr (pos1)) && 
           up(Hl, size0, pos0, pos1, Hl_final) && 
           store_int_array(a0, Hl_final, Maxsize)
   */
@@ -34,7 +33,7 @@ void up(int *a, int pos) {
           1 <= size0 && size0 + 1 <= Maxsize &&   
           1 <= pos1 && pos1 <= size0 && a == a0 &&
           pos == Vint (IntRepr (pos1)) && 
-          up(Hl, size0, pos0, pos1, Hl0) &&
+          up_inv(Hl, size0, pos0, pos1, Hl0) &&
           store_int_array(a0, Hl0, Maxsize)
   */
   while (pos > 1) {
@@ -71,7 +70,7 @@ void down(int *a, int size, int pos) {
           pos1 <= size0 && 
           pos == Vint (IntRepr (pos1)) &&
           size == Vint (IntRepr (size0)) &&  
-          down(Hl, size0, pos0, pos1, Hl0) &&
+          down_inv(Hl, size0, pos0, pos1, Hl0) &&
           store_int_array(a0, Hl0, Maxsize)
   */
   while (pos << 1 <= size) {
@@ -96,15 +95,14 @@ void down(int *a, int size, int pos) {
 void push(int *a, int *size, int val) {
   /*@ With Hl Maxsize size0 size_p val0 a0
       Require 
-        all_int(Hl) && 1 <= Maxsize && Maxsize <= INT_MAX &&
+        all_int(Hl) && INT_MIN <= val0 && val0 <= INT_MAX &&
+        1 <= Maxsize && Maxsize <= INT_MAX &&
         0 <= size0 && size0 + 1 + 1 <= Maxsize && a0 == a && 
         val == Vint (IntRepr (val0)) && 
         size == size_p && 
         store_int_array(a0, Hl, Maxsize) * store_int(size_p, size0)
       Ensure 
         exists Hl_final,
-          val == Vint (IntRepr (val0)) && 
-          size == size_p && 
           push(Hl, size0, val0, Hl_final) && 
           store_int_array(a0, Hl_final, Maxsize) * store_int(size_p, size0 + 1)
   */

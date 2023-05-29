@@ -12,6 +12,14 @@ Include heap.down.path0.
 Theorem proof: functional_correctness_statement.
 Proof.
   cbv delta [functional_correctness_statement].
-Admitted.
+  intros; Intros; subst.
+  forward.
+  Exists Hl pos0 a0 (Vint (IntRepr pos0)) (Vint (IntRepr size0)).
+  entailer!.
+  unfold down_inv.
+  exists 0%nat.
+  unfold RelsDomain.nsteps.
+  reflexivity.
+Qed.
 
 End SH_Proof.

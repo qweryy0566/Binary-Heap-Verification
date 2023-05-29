@@ -16,7 +16,7 @@ Proof.
   forward.
   Exists Hl pos0 a0 (Vint (IntRepr pos0)).
   entailer!.
-  unfold up, list_relation.heap_list_up.
+  unfold up_inv.
   exists 0%nat.
   unfold RelsDomain.nsteps.
   reflexivity.

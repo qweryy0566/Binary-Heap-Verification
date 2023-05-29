@@ -50,9 +50,9 @@ Definition f_up_spec_annotation :=
   ((PROP ((pos' = (Vint (IntRepr pos0))); (a' = a0); (Z.le (Z.add size0 1) Maxsize); (Z.le 1 size0); (Z.le pos0 size0); (Z.le 1 pos0); (Z.le Maxsize (Int.max_signed )); (Z.le 2 Maxsize); (all_int Hl))
   LOCAL (temp _a a'; temp _pos pos')
   SEP ((store_int_array a0 Hl Maxsize))),
-  (EX Hl_final pos1 pos,
-    (PROP ((up Hl size0 pos0 pos1 Hl_final); (pos = (Vint (IntRepr pos1))))
-    LOCAL (temp _pos pos)
+  (EX Hl_final pos1,
+    (PROP ((up Hl size0 pos0 pos1 Hl_final))
+    LOCAL ()
     SEP ((store_int_array a0 Hl_final Maxsize))))%assert).
 
 Definition f_up_spec_complex :=
@@ -71,7 +71,7 @@ Definition f_up_hint (para: GET_PARA_TYPE f_up_spec_annotation) :=
     (Csequence
       (Cassert
         (EX Hl0 pos1 a pos,
-          (PROP ((up Hl size0 pos0 pos1 Hl0); (pos = (Vint (IntRepr pos1))); (a = a0); (Z.le pos1 size0); (Z.le 1 pos1); (Z.le (Z.add size0 1) Maxsize); (Z.le 1 size0); (Z.le pos0 size0); (Z.le 1 pos0); (Z.le Maxsize (Int.max_signed )); (Z.le 2 Maxsize); (all_int Hl))
+          (PROP ((up_inv Hl size0 pos0 pos1 Hl0); (pos = (Vint (IntRepr pos1))); (a = a0); (Z.le pos1 size0); (Z.le 1 pos1); (Z.le (Z.add size0 1) Maxsize); (Z.le 1 size0); (Z.le pos0 size0); (Z.le 1 pos0); (Z.le Maxsize (Int.max_signed )); (Z.le 2 Maxsize); (all_int Hl))
           LOCAL (temp _a a; temp _pos pos)
           SEP ((store_int_array a0 Hl0 Maxsize))))%assert)
       (Csequence
@@ -137,7 +137,7 @@ Definition f_down_hint (para: GET_PARA_TYPE f_down_spec_annotation) :=
     (Csequence
       (Cassert
         (EX Hl0 pos1 a pos size,
-          (PROP ((down Hl size0 pos0 pos1 Hl0); (size = (Vint (IntRepr size0))); (pos = (Vint (IntRepr pos1))); (Z.le pos1 size0); (a = a0); (Z.le pos1 size0); (Z.le 1 pos1); (Z.le (Z.add size0 1) Maxsize); (Z.le 1 size0); (Z.le pos0 size0); (Z.le 1 pos0); (Z.le Maxsize (Int.max_signed )); (Z.le 2 Maxsize); (all_int Hl))
+          (PROP ((down_inv Hl size0 pos0 pos1 Hl0); (size = (Vint (IntRepr size0))); (pos = (Vint (IntRepr pos1))); (Z.le pos1 size0); (a = a0); (Z.le pos1 size0); (Z.le 1 pos1); (Z.le (Z.add size0 1) Maxsize); (Z.le 1 size0); (Z.le pos0 size0); (Z.le 1 pos0); (Z.le Maxsize (Int.max_signed )); (Z.le 2 Maxsize); (all_int Hl))
           LOCAL (temp _a a; temp _pos pos; temp _size size)
           SEP ((store_int_array a0 Hl0 Maxsize))))%assert)
       (Csequence
@@ -218,12 +218,12 @@ Definition f_down_hint (para: GET_PARA_TYPE f_down_spec_annotation) :=
 
 Definition f_push_spec_annotation :=
   ANNOTATION_WITH val0 size_p size0 a0 Maxsize Hl a' size' val',
-  ((PROP ((size' = size_p); (val' = (Vint (IntRepr val0))); (a0 = a'); (Z.le (Z.add (Z.add size0 1) 1) Maxsize); (Z.le 0 size0); (Z.le Maxsize (Int.max_signed )); (Z.le 1 Maxsize); (all_int Hl))
+  ((PROP ((size' = size_p); (val' = (Vint (IntRepr val0))); (a0 = a'); (Z.le (Z.add (Z.add size0 1) 1) Maxsize); (Z.le 0 size0); (Z.le Maxsize (Int.max_signed )); (Z.le 1 Maxsize); (Z.le val0 (Int.max_signed )); (Z.le (Int.min_signed ) val0); (all_int Hl))
   LOCAL (temp _a a'; temp _size size'; temp _val val')
   SEP ((store_int_array a0 Hl Maxsize); (store_int size_p size0))),
-  (EX Hl_final size val,
-    (PROP ((push Hl size0 val0 Hl_final); (size = size_p); (val = (Vint (IntRepr val0))))
-    LOCAL (temp _size size; temp _val val)
+  (EX Hl_final,
+    (PROP ((push Hl size0 val0 Hl_final))
+    LOCAL ()
     SEP ((store_int_array a0 Hl_final Maxsize); (store_int size_p (Z.add size0 1)))))%assert).
 
 Definition f_push_spec_complex :=
