@@ -49,7 +49,7 @@ Definition get_list_val(l: list_state): Z :=
   Znth ((snd l)) (fst l).
 
 Definition legal_list_state(l: list_state): Prop:=
-  ((snd l) <= Zlength (fst l) - 1) /\ 1 <= (snd l).
+  ((snd l) <= Zlength (fst l)) /\ 1 <= (snd l).
 
 Definition list_up_succeed:
   list_state -> list_state -> Prop :=
@@ -74,7 +74,7 @@ Definition list_up_fail:
 
 Definition heap_list_up:
   list_state -> list_state -> Prop :=
-  clos_refl_trans list_up_succeed.
+  (clos_refl_trans list_up_succeed) ∘ list_up_fail.
   (* ⋃ (iter_n_list_up). *)
 
 Definition left_son(l: list_state): list_state :=
@@ -121,7 +121,7 @@ Definition list_down_fail:
 
 Definition heap_list_down:
   list_state -> list_state -> Prop :=
-  clos_refl_trans list_down_succeed.
+  (clos_refl_trans list_down_succeed) ∘ list_down_fail.
   (* ⋃ (iter_n_list_down). *)
 
 Ltac simpl_Z :=
@@ -172,55 +172,62 @@ Qed.
 Example check_heap_list_up : heap_list_up (pair [233;2; 3; 4; 5] 2) (pair [233;3; 2; 4; 5] 1).
 Proof.
   unfold heap_list_up.
-Abort.
-  (* unfold iter_n_list_up.
   unfold_RELS_tac.
   exists (pair [233;3; 2; 4; 5] 1).
   split.
-  + apply check_succeed_up.
+  + exists 1%nat.
+    unfold list_up_succeed.
+    unfold nsteps.
+    unfold_RELS_tac.
+    exists (pair [233;3; 2; 4; 5] 1).
+    try_list_unfold.
+    split; [|reflexivity].
+    split; [lia|]. split; [lia|]. split; [lia|].
+    split; [reflexivity|].
+    split; [lia|].
+    unfold list_swap.
+    split; [tauto|]. split; [tauto|]. split; [tauto|].
+    unfold Zlength, Zlength_aux; simpl.
+    intros.
+    destruct H, H, H0.
+    assert (i = 0 \/ i = 3 \/ i = 4) by lia.
+    destruct H3; [subst; reflexivity|].
+    destruct H3; subst; reflexivity.
   + unfold list_up_fail.
-    simpl.
-    split.
-    - split; unfold legal_list_state; simpl_Z; lia.
-    - tauto.
-Qed. *)
+    unfold_RELS_tac.
+    try_list_unfold.
+    split; [|reflexivity].
+    split; [lia|].
+    left; reflexivity.
+Qed.
 
 Example check_heap_list_up2 : heap_list_up (pair [233;100;3;2;5] 4) (pair [233;100;5;2;3] 2).
 Proof.
   unfold heap_list_up.
-(*
-  unfold_RELS_tac.
-  exists 1%nat.
-  unfold iter_n_list_up.
   unfold_RELS_tac.
   exists (pair [233;100;5;2;3] 2).
   split.
-  + unfold list_up_succeed.
-    split; [unfold legal_list_state; simpl_Z; lia|].
-    split; [unfold legal_list_state; simpl_Z; lia|].
-    split; [unfold snd; lia|].
-    split; [unfold snd; tauto|].
-    split; [unfold get_list_val; simpl_Z; lia|].
-    simpl.
+  + exists 1%nat.
+    unfold nsteps.
+    unfold_RELS_tac.
+    exists (pair [233;100;5;2;3] 2).
+    split; [|reflexivity].
+    unfold list_up_succeed.
+    try_list_unfold.
+    split; [lia|]. split; [lia|]. split; [lia|].
+    split; [reflexivity|]. split; [lia|].
     unfold list_swap. simpl_Z.
-    split; [tauto|].
-    split; [tauto|].
-    split; [tauto|].
+    split; [tauto|]. split; [tauto|]. split; [tauto|].
     intros.
     destruct H as [H0 [H1 H2]].
     assert (i = 0 \/ i = 1 \/ i = 3) by lia.
     destruct H;[ subst; tauto|].
     destruct H; subst; tauto.
   + unfold list_up_fail.
-    simpl.
-    split.
-    - split.
-      unfold legal_list_state; simpl_Z; lia.
-      right; split; [lia|].
-      unfold get_list_val; simpl_Z; lia.
-    - tauto.
-Qed. *)
-Admitted.
+    unfold_RELS_tac.
+    try_list_unfold.
+    split; [split; lia |reflexivity].
+Qed.
 
 Example check_succeed_down : list_down_succeed (pair [233;4;6;9;2;4;1;3] 1) (pair [233;9;6;4;2;4;1;3] 3).
 Proof.
@@ -246,15 +253,17 @@ Qed.
 Example check_heap_list_down : heap_list_down (pair [233;4;6;9;2;4;1;3] 1) (pair [233;9;6;4;2;4;1;3] 3).
 Proof.
   unfold heap_list_down.
- (* unfold_RELS_tac.
-  exists 1%nat.
-  unfold iter_n_list_down.
   unfold_RELS_tac.
-  exists ([233; 9; 6; 4; 2; 4; 1; 3], 3).
+  exists (pair [233;9;6;4;2;4;1;3] 3).
   split.
-  + exact check_succeed_down.
+  + exists 1%nat.
+    unfold nsteps.
+    unfold_RELS_tac.
+    exists ([233; 9; 6; 4; 2; 4; 1; 3], 3).
+    split; [exact check_succeed_down|reflexivity].
   + unfold list_down_fail.
-    simpl_Z; split; [|tauto].
-    try_list_unfold; lia.
-Qed. *)
-Admitted.
+    unfold_RELS_tac.
+    split; [|reflexivity].
+    try_list_unfold.
+    lia.
+Qed.

@@ -10,18 +10,18 @@ Require Import Csplit.strongSoundness.
 Require Import Csplit.AClightFunc.
 Local Open Scope Z_scope.
 Import AClightNotations.
-Require Import cprogs.heap.program.
-Require Import cprogs.heap.definitions.
-Require Import cprogs.heap.annotation.
+Require Import heap.program.
+Require Import heap.definitions.
+Require Import heap.annotation.
 Import compcert.cfrontend.Clight.
 
 Definition functional_correctness_statement: Prop :=
-  forall (Espec: OracleKind) Hl Maxsize size0 val0 a' size' val',
+  forall (Espec: OracleKind) Hl Maxsize size0 size_p val0 a0 a' size' val',
   let Delta_specs := Delta_specs_push in
   let Delta := Delta_push Delta_specs in
-  semax Delta (PROP ((MaxHeap Hl size0); (size' = (Vint (IntRepr size0))); (val' = (Vint (IntRepr val0))); (Z.lt size0 Maxsize); (Z.le 0 size0))
+  semax Delta (PROP ((size' = size_p); (val' = (Vint (IntRepr val0))); (a0 = a'); (Z.le (Z.add (Z.add size0 1) 1) Maxsize); (Z.le 0 size0); (Z.le Maxsize (Int.max_signed )); (Z.le 1 Maxsize); (Z.le val0 (Int.max_signed )); (Z.le (Int.min_signed ) val0); (all_int Hl))
   LOCAL (temp _a a'; temp _size size'; temp _val val')
-  SEP ((store_int_array a' Hl Maxsize)))
+  SEP ((store_int_array a0 Hl Maxsize); (store_int size_p size0)))
   (Ssequence
     (Sset _t'3 (Ederef (Etempvar _size (tptr tint)) tint))
     (Ssequence
@@ -42,7 +42,7 @@ Definition functional_correctness_statement: Prop :=
                           tvoid cc_default))
               ((Etempvar _a (tptr tint)) :: (Etempvar _t'1 tint) :: nil)))))))
   (normal_split_assert (RA_normal (frame_ret_assert (function_body_ret_assert tvoid 
-  (EX Hl_final a size val,
-    (PROP ((MaxHeap Hl_final (Z.add size0 1)); (push Hl size0 val0 Hl_final); (size = (Vint (IntRepr (Z.add size0 1)))); (val = (Vint (IntRepr val0))))
-    LOCAL (temp _a a; temp _size size; temp _val val)
-    SEP ((store_int_array a Hl_final Maxsize))))%assert) (stackframe_of f_push)))).
+  (EX Hl_final,
+    (PROP ((push Hl size0 val0 Hl_final))
+    LOCAL ()
+    SEP ((store_int_array a0 Hl_final Maxsize); (store_int size_p (Z.add size0 1)))))%assert) (stackframe_of f_push)))).

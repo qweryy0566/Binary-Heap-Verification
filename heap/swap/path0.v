@@ -10,9 +10,9 @@ Require Import Csplit.strongSoundness.
 Require Import Csplit.AClightFunc.
 Local Open Scope Z_scope.
 Import AClightNotations.
-Require Import cprogs.heap.program.
-Require Import cprogs.heap.definitions.
-Require Import cprogs.heap.annotation.
+Require Import heap.program.
+Require Import heap.definitions.
+Require Import heap.annotation.
 Import compcert.cfrontend.Clight.
 
 Definition functional_correctness_statement: Prop :=

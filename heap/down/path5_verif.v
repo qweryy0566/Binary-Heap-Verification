@@ -1,13 +1,13 @@
 Require Import utils.VSTALib.
 
-Require Import cprogs.heap.program.
-Require Import cprogs.heap.definitions.
-Require Import cprogs.heap.annotation.
-Require cprogs.heap.down.path5.
+Require Import heap.program.
+Require Import heap.definitions.
+Require Import heap.annotation.
+Require heap.down.path5.
 
 Module SH_Proof <: STRAIGHTLINE_HOARE_TRIPLE_PROOF.
 
-Include cprogs.heap.down.path5.
+Include heap.down.path5.
 
 Theorem proof: functional_correctness_statement.
 Proof.

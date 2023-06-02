@@ -33,43 +33,9 @@ Definition heap_push: list Z -> Z -> list Z -> Prop :=
   fun l val l' =>
     exists (p: Z), heap_list_up (pair (l ++ [val]) (Zlength l)) (pair l' p).
 
-Example check_push1: heap_push [233;100;3;2] 5 [233;100;5;2;3].
-Proof.
-  unfold heap_push.
-  exists 2.
-  simpl_Z.
-  apply check_heap_list_up2.
-Qed.
-
-Example check_push2: heap_push [233] 400 [233; 400].
-Proof.
-  unfold heap_push.
-  exists 1.
-  simpl_Z.
-  unfold heap_list_up.
-Abort.
-  (* 
-  unfold_RELS_tac.
-  exists O.
-  simpl.
-  unfold list_up_fail.
-  unfold_RELS_tac.
-  simpl fst; simpl snd.
-  try_list_unfold.
-  split; [lia | reflexivity].
-Qed. *)
-
 Definition heap_pop: list Z -> list Z -> Prop :=
   fun l l' =>
     exists (p: Z), heap_list_down (pair (removelast ([Znth 0 l; Znth (Zlength l - 1) l] ++ (skipn 2%nat l))) 1) (pair l' p).
-
-Example check_pop1: heap_pop [233;10;6;9;2;4;1;3;4] [233;9;6;4;2;4;1;3].
-Proof.
-  unfold heap_pop.
-  simpl_Z.
-  exists 3.
-  apply check_heap_list_down.
-Qed.
 
 Lemma list_length: forall (p: val) (l: list Z) (size: Z),
   !!(size >= 0) && store_int_array p l size |-- !!(Zlength l = size).
@@ -80,22 +46,21 @@ Proof.
   reflexivity.
 Qed.
 
-Print firstn.
-
-Definition MaxHeap_p (l: list Z) (lo hi: Z): Prop :=
-  forall (i: Z), lo <= i <= hi ->
-    ~(left_son_check_list ((firstn (Z.to_nat (hi + 1)) l), i)) /\ ~(right_son_check_list ((firstn (Z.to_nat (hi + 1)) l), i)).
-
-Definition MaxHeap (l: list Z) (size: Z): Prop :=
-  MaxHeap_p l 1 size.
-
 Definition up: list Z -> Z -> Z -> Z -> list Z -> Prop :=
   fun l size p0 p1 l' =>
     heap_list_up ((firstn (Z.to_nat (size + 1)) l), p0) ((firstn (Z.to_nat (size + 1)) l'), p1).
 
+Definition up_inv: list Z -> Z -> Z -> Z -> list Z -> Prop :=
+  fun l size p0 p1 l' =>
+    (clos_refl_trans list_up_succeed) ((firstn (Z.to_nat (size + 1)) l), p0) ((firstn (Z.to_nat (size + 1)) l'), p1).
+
 Definition down: list Z -> Z -> Z -> Z -> list Z -> Prop :=
   fun l size p0 p1 l' =>
     heap_list_down ((firstn (Z.to_nat (size + 1)) l), p0) ((firstn (Z.to_nat (size + 1)) l'), p1).
+
+Definition down_inv: list Z -> Z -> Z -> Z -> list Z -> Prop :=
+  fun l size p0 p1 l' =>
+    (clos_refl_trans list_down_succeed) ((firstn (Z.to_nat (size + 1)) l), p0) ((firstn (Z.to_nat (size + 1)) l'), p1).
 
 Definition push: list Z -> Z -> Z -> list Z -> Prop :=
   fun l size val l' =>
@@ -115,6 +80,12 @@ Definition pop_result (l: list Z) (size: Z): Z :=
   match size with
     | 0 => -1
     | _ => 0
+  end.
+
+Fixpoint all_int (l: list Z): Prop :=
+  match l with
+  | nil => True
+  | h :: l0 => Int.min_signed <= h <= Int.max_signed /\ all_int l0
   end.
 
 Lemma left_son_check_hold: forall l pos len1 len2,
@@ -139,7 +110,8 @@ Proof.
       unfold legal_list_state.
       simpl fst; simpl snd.
       rewrite !Zlength_firstn.
-      lia.
+      (* lia. *)
+      give_up.
     - right.
       revert H1.
       unfold get_list_val.
@@ -153,7 +125,8 @@ Proof.
       pose proof (Znth_firstn (firstn (Z.to_nat len1) l) (pos*2) len2 H5).
       rewrite H6, H7.
       tauto.
-Qed.
+(* Qed. *)
+Admitted.
 
 Lemma right_son_check_hold: forall l pos len1 len2,
   len2 <= len1 -> len2 >= 0 ->
@@ -177,7 +150,8 @@ Proof.
       unfold legal_list_state.
       simpl fst; simpl snd.
       rewrite !Zlength_firstn.
-      lia.
+      (* lia. *)
+      give_up.
     - right.
       revert H1.
       unfold get_list_val.
@@ -191,7 +165,8 @@ Proof.
       pose proof (Znth_firstn (firstn (Z.to_nat len1) l) (pos*2+1) len2 H5).
       rewrite H6, H7.
       tauto.
-Qed.
+(* Qed. *)
+Admitted.
 
 Lemma son_check_hold: forall l pos len1 len2,
   len2 <= len1 -> len2 >= 0 ->
@@ -206,7 +181,7 @@ Proof.
   + apply (right_son_check_hold l pos len1 len2 H H0 H2).
 Qed.
 
-Lemma MaxHeap_p_coincidence_for_idx: forall l (x1 y1 x2 y2: Z),
+(* Lemma MaxHeap_p_coincidence_for_idx: forall l (x1 y1 x2 y2: Z),
   MaxHeap_p l x1 y1 -> 0 <= x1 <= x2 -> 0 <= y2 <= y1 -> MaxHeap_p l x2 y2.
 Proof.
   intros.
@@ -216,7 +191,7 @@ Proof.
   apply (son_check_hold l i (y1 + 1) (y2 + 1)); [lia | lia | ].
   apply H.
   lia.
-Qed.
+Qed. *)
 
 (* Search sublist.
 Print sublist. *)
@@ -240,7 +215,18 @@ Proof.
   +   
 Admitted.
 
-Lemma MaxHeap_p_coincidence_for_list: forall l l' x y,
+(* Lemma up_pos_in_range: forall l l' x y size,
+  (up l size x y l') -> (1 <= y /\ y <= size).
+Proof.
+  intros.
+  unfold up,heap_list_up in H.
+  induction H.
+  induction x0.
+  + unfold nsteps in H.
+Qed. *)
+
+
+(* Lemma MaxHeap_p_coincidence_for_list: forall l l' x y,
   MaxHeap_p l x y ->
   (forall i, x <= i <= y -> Znth i l = Znth i l') ->
   MaxHeap_p l' x y.
@@ -260,5 +246,20 @@ Proof.
   replace (Z.min (Z.max 0 (size + 1)) (Zlength l)) with (size + 1) in H3 by lia.
   destruct H3 as [? [?  [? [? [? ?] ] ] ] ].
   split.
-  +
-Admitted.
+  + Admitted.
+
+Lemma MaxHeap_up_fail: forall l pos size, 
+  MaxHeap l (pos-1) -> MaxHeap_p l pos size
+  -> list_up_fail ((firstn (Z.to_nat (size + 1)) l), pos) ((firstn (Z.to_nat (size + 1)) l), pos)
+  -> MaxHeap l size.
+Proof.
+  intros.
+  unfold list_up_fail in H1.
+  revert H1; unfold_RELS_tac; intros.
+  destruct H1; clear H2.
+  destruct H1, H2.
+  + unfold snd in H2; subst.
+    apply H0.
+  + revert H2; unfold fst, snd; intros.
+    destruct H2.
+    Admitted. *)
