@@ -10,22 +10,6 @@ Module SH_Proof <: STRAIGHTLINE_HOARE_TRIPLE_PROOF.
 
 Include heap.up.path1.
 
-Lemma offset_val_field_address:
-  forall pos len a,
-    0 <= pos < len ->
-    field_compatible (tarray tint len) [] a ->
-    offset_val (sizeof tint * pos) a = field_address (tarray tint len) [ArraySubsc pos] a.
-Proof.
-  intros.
-  assert (field_compatible (tarray tint len) [ArraySubsc pos] a). {
-    apply field_compatible_cons.
-    split; [lia | tauto].
-  }
-  pose proof field_compatible_field_address _ _ _ H1.
-  rewrite H2.
-  tauto. 
-Qed.
-
 (* Lemma array_after_swap:  *)
 
 Theorem proof: functional_correctness_statement.
@@ -69,7 +53,7 @@ Proof.
                 field_address (tarray tint Maxsize) [ArraySubsc pos1] a0,
                 field_address (tarray tint Maxsize) [ArraySubsc (pos1 / 2)] a0).
   {
-     entailer!.
+    entailer!.
     split.
     + f_equal.
       apply offset_val_field_address; [lia | tauto].

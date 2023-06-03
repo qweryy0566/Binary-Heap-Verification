@@ -465,6 +465,18 @@ Proof.
       * rewrite upd_Znth_Zlength; lia.
       * lia.     
 Qed.
+
+Lemma Zlor_add_one: forall x,
+  x >= 0 -> Z.lor (x * 2) 1 = x * 2 + 1.
+Proof.
+  intros.
+  replace (x * 2) with (2 * x) by lia.
+  induction x; simpl.
+  + reflexivity.
+  + reflexivity.
+  + lia.   
+Qed.
+
 (* Lemma up_pos_in_range: forall l l' x y size,
   (up l size x y l') -> (1 <= y /\ y <= size).
 Proof.
@@ -513,3 +525,19 @@ Proof.
   + revert H2; unfold fst, snd; intros.
     destruct H2.
     Admitted. *)
+
+Lemma offset_val_field_address:
+  forall pos len a,
+    0 <= pos < len ->
+    field_compatible (tarray tint len) [] a ->
+    offset_val (sizeof tint * pos) a = field_address (tarray tint len) [ArraySubsc pos] a.
+Proof.
+  intros.
+  assert (field_compatible (tarray tint len) [ArraySubsc pos] a). {
+    apply field_compatible_cons.
+    split; [lia | tauto].
+  }
+  pose proof field_compatible_field_address _ _ _ H1.
+  rewrite H2.
+  tauto. 
+Qed.
