@@ -399,6 +399,10 @@ Proof.
   tauto.
 Qed.
 
+Lemma upd_Znth_firstn_in: forall {A: Type} (l: list A) i j x,
+  0 <= i < Zlength l -> 0 <= j < Zlength l ->
+  upd_Znth i (firstn (Z.to_nat j) l) x = firstn (Z.to_nat j) (upd_Znth i l x).
+
 Lemma list_swap_firstn: forall l i j len,
   0 <= i < len -> 0 <= j < len -> len <= Zlength l ->
   firstn (Z.to_nat len) (list_swap l i j) = list_swap (firstn (Z.to_nat len) l) i j.

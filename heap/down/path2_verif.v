@@ -12,6 +12,7 @@ Include heap.down.path2.
 Theorem proof: functional_correctness_statement.
 Proof.
   cbv delta [functional_correctness_statement].
+  
 Admitted.
 
 End SH_Proof.

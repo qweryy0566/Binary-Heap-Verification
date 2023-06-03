@@ -48,7 +48,7 @@ void up(int *a, int pos) {
 void down(int *a, int size, int pos) {
   /*@ With Hl Maxsize size0 pos0 a0
       Require 
-        all_int(Hl) && 2 <= Maxsize && Maxsize <= INT_MAX &&
+        all_int(Hl) && 2 <= Maxsize && 2 * Maxsize <= INT_MAX &&
         1 <= pos0 && pos0 <= size0 &&
         1 <= size0 && size0 + 1 <= Maxsize && a == a0 &&
         pos == Vint (IntRepr (pos0)) && 
@@ -63,7 +63,7 @@ void down(int *a, int size, int pos) {
 
   /*@ Inv
         exists Hl0 pos1, 
-          all_int(Hl) && 2 <= Maxsize && Maxsize <= INT_MAX &&
+          all_int(Hl) && 2 <= Maxsize && 2 * Maxsize <= INT_MAX &&
           1 <= pos0 && pos0 <= size0 &&
           1 <= size0 && size0 + 1 <= Maxsize &&   
           1 <= pos1 && pos1 <= size0 && a == a0 &&
@@ -114,7 +114,7 @@ void push(int *a, int *size, int val) {
 int pop(int *a, int *size) {
   /*@ With Hl Maxsize size0 size_p a0
       Require  
-        all_int(Hl) && 1 <= Maxsize && Maxsize <= INT_MAX &&
+        all_int(Hl) && 1 <= Maxsize && 2 * Maxsize <= INT_MAX &&
         0 <= size0 && size0 + 1 <= Maxsize && a == a0 &&
         size == size_p && 
         store_int_array(a0, Hl, Maxsize) * store_int(size_p, size0)

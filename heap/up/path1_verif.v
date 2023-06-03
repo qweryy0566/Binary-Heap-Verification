@@ -26,6 +26,8 @@ Proof.
   tauto. 
 Qed.
 
+(* Lemma array_after_swap:  *)
+
 Theorem proof: functional_correctness_statement.
 Proof.
   cbv delta [functional_correctness_statement].
@@ -241,15 +243,11 @@ Proof.
   simpl; split.
   + split; [| lia].
     rewrite Zlength_firstn.
-    replace (Z.max 0 (size0 + 1)) with (size0 + 1) by lia.
-    replace (Z.min (size0 + 1) (Zlength Hl0)) with (size0 + 1) by lia.
     lia.
   + split.
     - split; [| lia].
       rewrite Zlength_firstn.
-      replace (Z.max 0 (size0 + 1)) with (size0 + 1) by lia.
       assert (Zlength (list_swap Hl0 (pos1 / 2) pos1) = Zlength Hl0) by (rewrite list_swap_len; lia).
-      replace (Z.min (size0 + 1) (Zlength (list_swap Hl0 (pos1 / 2) pos1))) with (size0 + 1) by lia.
       lia.
     - split; [lia | ].
       split; [lia | ].
