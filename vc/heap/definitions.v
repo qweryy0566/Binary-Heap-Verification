@@ -88,6 +88,114 @@ Fixpoint all_int (l: list Z): Prop :=
   | h :: l0 => Int.min_signed <= h <= Int.max_signed /\ all_int l0
   end.
 
+Lemma all_int_app: forall (l1 l2: list Z),
+  all_int l1 -> all_int l2 -> all_int (l1 ++ l2).
+Proof.
+  intros.
+  induction l1; [tauto|].
+  rewrite <- app_comm_cons.
+  revert H.
+  unfold all_int; fold all_int.
+  intros.
+  destruct H.
+  split; tauto.
+Qed.
+
+Lemma all_int_sublist: forall (Hl: list Z) (l r: Z),
+  all_int Hl -> all_int (sublist l r Hl).
+Proof.
+  intros.
+  unfold sublist.
+  assert (forall (lt: list Z) (p: nat), all_int lt -> all_int (skipn p lt)). {
+    intros; revert lt H0.
+    induction p.
+    + unfold skipn; tauto.
+    + intros.
+      destruct lt; [rewrite skipn_nil; tauto|].
+      assert (skipn p lt = skipn (S p) (z :: lt)) by reflexivity.
+      rewrite <- H1.
+      unfold all_int in H0; fold all_int in H0.
+      destruct H0.
+      apply IHp; tauto.
+  }
+  assert (forall (lt: list Z) (p: nat), all_int lt -> all_int (firstn p lt)). {
+    intros; revert lt H1.
+    induction p.
+    + unfold firstn, all_int. tauto.
+    + intros.
+      destruct lt; [rewrite firstn_nil; tauto|].
+      assert (z :: firstn p lt = firstn (S p) (z :: lt)) by reflexivity.
+      rewrite <- H2.
+      revert H1.
+      unfold all_int; fold all_int; intros.
+      destruct H1.
+      split; [tauto|].
+      apply IHp; tauto.
+  }
+  apply H1.
+  apply H0.
+  tauto.
+Qed.
+
+Lemma all_int_Znth: forall (l: list Z) (p: Z),
+  all_int l -> 0 <= p < (Zlength l) -> 
+  Int.min_signed <= (Znth p l) <= Int.max_signed.
+Proof.
+  intros.
+  Search sublist Znth.
+  destruct H0.
+  assert (p + 1 <= Zlength l) by lia.
+  pose proof sublist_one p (p+1) l H0 H2 ltac:(lia).
+  pose proof all_int_sublist l p (p+1) H.
+  rewrite H3 in H4.
+  unfold all_int in H4.
+  tauto.
+Qed.
+
+Lemma all_int_upd_Znth: forall (l: list Z) (p val: Z),
+  all_int l ->
+  Int.min_signed <= val -> val <= Int.max_signed ->
+  all_int (upd_Znth p l val).
+Proof.
+  intros.
+  unfold upd_Znth.
+  apply all_int_app.
+  + apply all_int_sublist; tauto.
+  + unfold all_int; fold all_int.
+    split; [tauto|].
+    apply all_int_sublist; tauto.
+Qed.
+
+Lemma firstn_app_upd_Znth: forall (l: list Z) (val: Z) (pos: nat), 
+  (Z.of_nat pos) < Zlength l ->
+  firstn (pos + 1) (upd_Znth (Z.of_nat pos) l val) = (firstn pos l) ++ [val].
+Proof.
+  intros.
+  revert l H.
+  induction pos; intros; [tauto|].
+  destruct l; [discriminate|].
+  replace (upd_Znth (Z.of_nat (S pos)) (z :: l) val) with (z :: (upd_Znth (Z.of_nat pos) l val)).
+  + assert ( ((S pos) + 1 = S (pos +1))%nat ) by lia.
+    rewrite H0.
+    rewrite ! firstn_cons.
+    rewrite <- app_comm_cons.
+    rewrite Zlength_cons in H.
+    assert (Z.of_nat pos < Zlength l ) by lia.
+    pose proof (IHpos l H1).
+    rewrite H2.
+    reflexivity.
+  + assert (z::l = [z]++l) by reflexivity.
+    rewrite H0 in H.
+    assert (1<= (Z.of_nat (S pos)) <= Zlength ([z] ++ l)) by lia.
+    rewrite H0.
+    rewrite Zlength_app in H1.
+    pose proof (upd_Znth_app2 [z] l (Z.of_nat (S pos)) val H1).
+    rewrite H2.
+    replace (Z.of_nat pos) with (Z.of_nat (S pos) - Zlength [z]); [reflexivity|].
+    unfold Zlength; unfold Zlength_aux.
+    lia.
+Qed.
+
 Lemma left_son_check_hold: forall l pos len1 len2,
   len2 <= len1 -> len2 >= 0 ->
   ~left_son_check_list (firstn (Z.to_nat len1) l, pos) ->

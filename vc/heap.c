@@ -131,7 +131,7 @@ int pop(int *a, int *size) {
   }
   a[1] = a[*size];
   --(*size);
-  down(a, *size, 1);
+  if(*size >= 1) down(a, *size, 1);
   return 0;
 }
 
