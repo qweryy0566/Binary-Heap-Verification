@@ -151,7 +151,6 @@ Lemma all_int_Znth: forall (l: list Z) (p: Z),
   Int.min_signed <= (Znth p l) <= Int.max_signed.
 Proof.
   intros.
-  Search sublist Znth.
   destruct H0.
   assert (p + 1 <= Zlength l) by lia.
   pose proof sublist_one p (p+1) l H0 H2 ltac:(lia).
@@ -398,10 +397,6 @@ Proof.
   replace (i - 0) with i by lia.
   tauto.
 Qed.
-
-Lemma upd_Znth_firstn_in: forall {A: Type} (l: list A) i j x,
-  0 <= i < Zlength l -> 0 <= j < Zlength l ->
-  upd_Znth i (firstn (Z.to_nat j) l) x = firstn (Z.to_nat j) (upd_Znth i l x).
 
 Lemma list_swap_firstn: forall l i j len,
   0 <= i < len -> 0 <= j < len -> len <= Zlength l ->
