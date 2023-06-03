@@ -335,9 +335,137 @@ Proof.
   unfold list_swap.
   apply all_int_upd_Znth.
   + apply all_int_upd_Znth; [exact H |  |].
-    - pose proof all_int_Znth _ _ H H0. 
+    - pose proof all_int_Znth _ _ H H0.
+      lia.
+    - pose proof all_int_Znth _ _ H H0.
+      lia.
+  + pose proof all_int_Znth _ _ H H1.
+    lia.
+  + pose proof all_int_Znth _ _ H H1.
+    lia.
 Qed.
 
+Lemma list_swap_rela_correct: forall l i j,
+  0 <= i < Zlength l -> 0 <= j < Zlength l ->
+  list_relation.list_swap i j l (list_swap l i j).
+Proof.
+  intros.
+  unfold list_relation.list_swap.
+  unfold list_swap.
+  split.
+  + rewrite !upd_Znth_Zlength.
+    - reflexivity.
+    - lia.
+    - rewrite upd_Znth_Zlength by lia.
+      lia.
+  + split.
+    assert (i = j \/ i <> j) by lia.
+    destruct H1.
+    - subst.
+      rewrite upd_Znth_same; [reflexivity | ].
+      rewrite upd_Znth_Zlength by lia.
+      lia. 
+    - rewrite upd_Znth_diff.
+      * rewrite upd_Znth_same; [reflexivity | lia].
+      * rewrite upd_Znth_Zlength; lia.
+      * rewrite upd_Znth_Zlength; lia.
+      * lia.
+    - split.
+      assert (i = j \/ i <> j) by lia.
+      destruct H1.
+      * subst.
+        rewrite upd_Znth_same; [reflexivity |].
+        rewrite upd_Znth_Zlength by lia.
+        lia. 
+      * rewrite upd_Znth_same; [reflexivity |].
+        rewrite upd_Znth_Zlength; lia.
+      * intros.
+        destruct H1 as [? [? ?] ].
+        rewrite upd_Znth_diff.
+        rewrite upd_Znth_diff by lia.
+        reflexivity.
+        rewrite upd_Znth_Zlength; lia.
+        rewrite upd_Znth_Zlength; lia.
+        lia.
+Qed.
+
+Lemma firstn_eq_sublist: forall {A: Type} (l: list A) i,
+  firstn (Z.to_nat i) l = sublist 0 i l.
+Proof.
+  intros.
+  unfold sublist.
+  simpl.
+  replace (i - 0) with i by lia.
+  tauto.
+Qed.
+
+Lemma list_swap_firstn: forall l i j len,
+  0 <= i < len -> 0 <= j < len -> len <= Zlength l ->
+  firstn (Z.to_nat len) (list_swap l i j) = list_swap (firstn (Z.to_nat len) l) i j.
+Proof.
+  intros.
+  unfold list_swap.
+  rewrite !firstn_eq_sublist.
+  rewrite !sublist_upd_Znth_lr; try lia.
+  + rewrite !Znth_sublist; try lia.
+    replace (i - 0) with i by lia.
+    replace (j - 0) with j by lia.
+    replace (i + 0) with i by lia.
+    replace (j + 0) with j by lia.
+    reflexivity.
+  + rewrite upd_Znth_Zlength; lia.  
+Qed.
+
+Lemma list_swap_rela_correct_firstn: forall l i j len,
+  0 <= i < len -> 0 <= j < len -> len <= Zlength l ->
+  list_relation.list_swap i j (firstn (Z.to_nat len) l) (firstn (Z.to_nat len) (list_swap l i j)).
+Proof.
+  intros.
+  rewrite list_swap_firstn by lia.
+  apply list_swap_rela_correct.
+  + rewrite Zlength_firstn.
+    lia.
+  + rewrite Zlength_firstn.
+    lia.  
+Qed.
+
+Lemma list_swap_eq: forall l i j,
+  0 <= i < Zlength l -> 0 <= j < Zlength l ->
+  list_swap l i j = list_swap l j i.
+Proof.
+  intros.
+  eapply Znth_eq_ext.
+  + rewrite !list_swap_len by lia.
+    reflexivity.
+  + intros.
+    unfold list_swap.
+    assert (i = i0 \/ i <> i0) by lia.
+    destruct H2.
+    - subst.
+      rewrite upd_Znth_same.
+      assert (j = i0 \/ j <> i0) by lia.
+      destruct H2.
+      * subst.
+        rewrite upd_Znth_same; [reflexivity | rewrite upd_Znth_Zlength; lia].
+      * rewrite upd_Znth_diff.
+        rewrite upd_Znth_same; [reflexivity | lia ].
+        rewrite upd_Znth_Zlength; lia.
+        rewrite upd_Znth_Zlength; lia.
+        lia.
+      * rewrite upd_Znth_Zlength; lia.
+    - rewrite list_swap_len in H1 by lia.
+      rewrite upd_Znth_diff.
+      assert (j = i0 \/ j <> i0) by lia. 
+      destruct H3.
+      * subst.
+        rewrite !upd_Znth_same; [reflexivity | rewrite upd_Znth_Zlength; lia | lia].
+      * rewrite !upd_Znth_diff; try lia.
+        ++ rewrite upd_Znth_Zlength by lia; lia.
+        ++ rewrite upd_Znth_Zlength by lia; lia.
+      * rewrite upd_Znth_Zlength; lia.
+      * rewrite upd_Znth_Zlength; lia.
+      * lia.     
+Qed.
 (* Lemma up_pos_in_range: forall l l' x y size,
   (up l size x y l') -> (1 <= y /\ y <= size).
 Proof.

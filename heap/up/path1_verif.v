@@ -231,7 +231,7 @@ Proof.
   split.
   2: {
     split; [ | f_equal; rewrite H12; reflexivity].
-    
+    apply all_int_swap; [tauto | lia | lia ].
   }
   unfold up_inv.
   etransitivity_n1; [apply H | ].
@@ -257,8 +257,10 @@ Proof.
       * rewrite !Int.signed_repr in H14.
         ++ rewrite !Znth_firstn by lia.
            lia.
-        ++ apply all_int_Znth. [tauto | lia].
-Admitted.
-
+        ++ apply all_int_Znth; [tauto | lia].
+        ++ apply all_int_Znth; [tauto | lia].
+      * rewrite list_swap_eq by lia.
+        apply list_swap_rela_correct_firstn; lia.
+Qed.
 
 End SH_Proof.
