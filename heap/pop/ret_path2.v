@@ -53,20 +53,9 @@ Definition functional_correctness_statement: Prop :=
                   (Ssequence
                     (Sifthenelse (Ebinop Oge (Etempvar _t'1 tint)
                                    (Econst_int (Int.repr 1) tint) tint)
-                      Sskip
-                      Sbreak)
-                    (Ssequence
-                      (Sset _t'2 (Ederef (Etempvar _size (tptr tint)) tint))
-                      (Ssequence
-                        (Scall None
-                          (Evar _down (Tfunction
-                                        (Tcons (tptr tint)
-                                          (Tcons tint (Tcons tint Tnil)))
-                                        tvoid cc_default))
-                          ((Etempvar _a (tptr tint)) ::
-                           (Etempvar _t'2 tint) ::
-                           (Econst_int (Int.repr 1) tint) :: nil))
-                        (Sreturn (Some (Econst_int (Int.repr 0) tint))))))))))))))
+                      Sbreak
+                      Sskip)
+                    (Sreturn (Some (Econst_int (Int.repr 0) tint))))))))))))
   (return_split_assert (RA_return (frame_ret_assert (function_body_ret_assert tint 
   (EX Hl_final size1 __return,
     (PROP ((pop Hl size0 Hl_final); (size1 = (pop_length Hl size0)); (__return = (Vint (IntRepr (pop_result Hl size0)))))

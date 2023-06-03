@@ -326,6 +326,18 @@ Proof.
     lia.
 Qed.
 
+Lemma all_int_swap: forall l i j,
+  all_int l ->
+  0 <= i < Zlength l -> 0 <= j < Zlength l ->
+  all_int (list_swap l i j).
+Proof.
+  intros.
+  unfold list_swap.
+  apply all_int_upd_Znth.
+  + apply all_int_upd_Znth; [exact H |  |].
+    - pose proof all_int_Znth _ _ H H0. 
+Qed.
+
 (* Lemma up_pos_in_range: forall l l' x y size,
   (up l size x y l') -> (1 <= y /\ y <= size).
 Proof.

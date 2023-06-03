@@ -228,7 +228,11 @@ Proof.
     sep_apply H26.
     entailer!.
   }
-  split; [ | f_equal; rewrite H12; reflexivity].
+  split.
+  2: {
+    split; [ | f_equal; rewrite H12; reflexivity].
+    
+  }
   unfold up_inv.
   etransitivity_n1; [apply H | ].
   unfold list_relation.list_up_succeed.

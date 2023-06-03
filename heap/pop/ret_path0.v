@@ -23,9 +23,9 @@ Definition functional_correctness_statement: Prop :=
   LOCAL (temp _a a'; temp _size size')
   SEP ((store_int_array a0 Hl Maxsize); (store_int size_p size0)))
   (Ssequence
-    (Sset _t'5 (Ederef (Etempvar _size (tptr tint)) tint))
+    (Sset _t'6 (Ederef (Etempvar _size (tptr tint)) tint))
     (Ssequence
-      (Sifthenelse (Ebinop Oeq (Etempvar _t'5 tint)
+      (Sifthenelse (Ebinop Oeq (Etempvar _t'6 tint)
                      (Econst_int (Int.repr 0) tint) tint)
         Sskip
         Sbreak)
