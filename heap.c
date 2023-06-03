@@ -28,7 +28,7 @@ void up(int *a, int pos) {
 
   /*@ Inv
         exists Hl0 pos1, 
-          all_int(Hl) && 2 <= Maxsize && Maxsize <= INT_MAX &&
+          all_int(Hl0) && 2 <= Maxsize && Maxsize <= INT_MAX &&
           1 <= pos0 && pos0 <= size0 &&
           1 <= size0 && size0 + 1 <= Maxsize &&   
           1 <= pos1 && pos1 <= size0 && a == a0 &&
@@ -125,13 +125,14 @@ int pop(int *a, int *size) {
           pop(Hl, size0, Hl_final) && 
           store_int_array(a0, Hl_final, Maxsize) * store_int(size_p, size1)
   */
-  if (*size == 0)
-  {
+  if (*size == 0) {
     return -1;
   }
   a[1] = a[*size];
   --(*size);
-  down(a, *size, 1);
+  if (*size >= 1) {
+    down(a, *size, 1);
+  }
   return 0;
 }
 

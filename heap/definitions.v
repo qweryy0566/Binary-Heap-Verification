@@ -29,6 +29,29 @@ Notation "'store_int_array' p l size" :=
 (* Parameter pop_length : list Z -> Z -> Z. *)
 (* Parameter pop_result : list Z -> Z -> Z. *)
 
+Import ListNotations.
+
+Lemma int_array_is_ptr: forall (p: val) (l: list Z) (size: Z),
+  !!(size >= 0) && store_int_array p l size |-- !!isptr p.
+Proof.
+  intros.
+  entailer!.
+Qed.
+
+Lemma store_int_split: forall p l size i,
+  0 <= i < size ->
+  store_int_array p l size
+  |-- EX frame, (store_int (field_address (tarray tint size) [ArraySubsc i] p) (Znth i l) *
+      fold_right_sepcon frame)%logic.
+Proof.
+  intros.
+  destruct (classic (size = 1)).
+  + replace i with 0 by lia.
+    subst.
+    Exists (@nil mpred).
+    entailer!.
+Admitted.
+
 Definition heap_push: list Z -> Z -> list Z -> Prop :=
   fun l val l' =>
     exists (p: Z), heap_list_up (pair (l ++ [val]) (Zlength l)) (pair l' p).
@@ -52,7 +75,7 @@ Definition up: list Z -> Z -> Z -> Z -> list Z -> Prop :=
 
 Definition up_inv: list Z -> Z -> Z -> Z -> list Z -> Prop :=
   fun l size p0 p1 l' =>
-    (clos_refl_trans list_up_succeed) ((firstn (Z.to_nat (size + 1)) l), p0) ((firstn (Z.to_nat (size + 1)) l'), p1).
+    clos_refl_trans list_up_succeed ((firstn (Z.to_nat (size + 1)) l), p0) ((firstn (Z.to_nat (size + 1)) l'), p1).
 
 Definition down: list Z -> Z -> Z -> Z -> list Z -> Prop :=
   fun l size p0 p1 l' =>
@@ -60,7 +83,7 @@ Definition down: list Z -> Z -> Z -> Z -> list Z -> Prop :=
 
 Definition down_inv: list Z -> Z -> Z -> Z -> list Z -> Prop :=
   fun l size p0 p1 l' =>
-    (clos_refl_trans list_down_succeed) ((firstn (Z.to_nat (size + 1)) l), p0) ((firstn (Z.to_nat (size + 1)) l'), p1).
+    clos_refl_trans list_down_succeed ((firstn (Z.to_nat (size + 1)) l), p0) ((firstn (Z.to_nat (size + 1)) l'), p1).
 
 Definition push: list Z -> Z -> Z -> list Z -> Prop :=
   fun l size val l' =>
@@ -88,8 +111,107 @@ Fixpoint all_int (l: list Z): Prop :=
   | h :: l0 => Int.min_signed <= h <= Int.max_signed /\ all_int l0
   end.
 
+Lemma all_int_app: forall (l1 l2: list Z),
+  all_int l1 -> all_int l2 -> all_int (l1 ++ l2).
+Proof.
+  intros.
+  induction l1; [tauto|].
+  rewrite <- app_comm_cons.
+  revert H.
+  unfold all_int; fold all_int.
+  intros.
+  destruct H.
+  split; tauto.
+Qed.
+
+Lemma all_int_Znth: forall (l: list Z) (p: Z),
+  all_int l -> 0 <= p < (Zlength l) -> 
+  Int.min_signed <= (Znth p l) <= Int.max_signed.
+Proof.
+Admitted.
+
+Lemma all_int_sublist: forall (Hl: list Z) (l r: Z),
+  all_int Hl -> all_int (sublist l r Hl).
+Proof.
+  intros.
+  unfold sublist.
+  assert (forall (lt: list Z) (p: nat), all_int lt -> all_int (skipn p lt)). {
+    intros; revert lt H0.
+    induction p.
+    + unfold skipn; tauto.
+    + intros.
+      destruct lt; [rewrite skipn_nil; tauto|].
+      assert (skipn p lt = skipn (S p) (z :: lt)) by reflexivity.
+      rewrite <- H1.
+      unfold all_int in H0; fold all_int in H0.
+      destruct H0.
+      apply IHp; tauto.
+  }
+  assert (forall (lt: list Z) (p: nat), all_int lt -> all_int (firstn p lt)). {
+    intros; revert lt H1.
+    induction p.
+    + unfold firstn, all_int. tauto.
+    + intros.
+      destruct lt; [rewrite firstn_nil; tauto|].
+      assert (z :: firstn p lt = firstn (S p) (z :: lt)) by reflexivity.
+      rewrite <- H2.
+      revert H1.
+      unfold all_int; fold all_int; intros.
+      destruct H1.
+      split; [tauto|].
+      apply IHp; tauto.
+  }
+  apply H1.
+  apply H0.
+  tauto.
+Qed.
+
+Lemma all_int_upd_Znth: forall (l: list Z) (p val: Z),
+  all_int l ->
+  Int.min_signed <= val -> val <= Int.max_signed ->
+  all_int (upd_Znth p l val).
+Proof.
+  intros.
+  unfold upd_Znth.
+  apply all_int_app.
+  + apply all_int_sublist; tauto.
+  + unfold all_int; fold all_int.
+    split; [tauto|].
+    apply all_int_sublist; tauto.
+Qed.
+
+Lemma firstn_app_upd_Znth: forall (l: list Z) (val: Z) (pos: nat), 
+  (Z.of_nat pos) < Zlength l ->
+  firstn (pos + 1) (upd_Znth (Z.of_nat pos) l val) = (firstn pos l) ++ [val].
+Proof.
+  intros.
+  revert l H.
+  induction pos; intros; [tauto|].
+  destruct l; [discriminate|].
+  replace (upd_Znth (Z.of_nat (S pos)) (z :: l) val) with (z :: (upd_Znth (Z.of_nat pos) l val)).
+  + assert ( ((S pos) + 1 = S (pos +1))%nat ) by lia.
+    rewrite H0.
+    rewrite ! firstn_cons.
+    rewrite <- app_comm_cons.
+    rewrite Zlength_cons in H.
+    assert (Z.of_nat pos < Zlength l ) by lia.
+    pose proof (IHpos l H1).
+    rewrite H2.
+    reflexivity.
+  + assert (z::l = [z]++l) by reflexivity.
+    rewrite H0 in H.
+    assert (1<= (Z.of_nat (S pos)) <= Zlength ([z] ++ l)) by lia.
+    rewrite H0.
+    rewrite Zlength_app in H1.
+    pose proof (upd_Znth_app2 [z] l (Z.of_nat (S pos)) val H1).
+    rewrite H2.
+    replace (Z.of_nat pos) with (Z.of_nat (S pos) - Zlength [z]); [reflexivity|].
+    unfold Zlength; unfold Zlength_aux.
+    lia.
+Qed.
+
 Lemma left_son_check_hold: forall l pos len1 len2,
-  len2 <= len1 -> len2 >= 0 ->
+  len2 <= len1 -> len2 >= 1 ->
   ~left_son_check_list (firstn (Z.to_nat len1) l, pos) ->
   ~left_son_check_list (firstn (Z.to_nat len2) l, pos).
 Proof.
@@ -110,8 +232,8 @@ Proof.
       unfold legal_list_state.
       simpl fst; simpl snd.
       rewrite !Zlength_firstn.
-      (* lia. *)
-      give_up.
+      apply or_not_and.
+      lia.
     - right.
       revert H1.
       unfold get_list_val.
@@ -125,11 +247,10 @@ Proof.
       pose proof (Znth_firstn (firstn (Z.to_nat len1) l) (pos*2) len2 H5).
       rewrite H6, H7.
       tauto.
-(* Qed. *)
-Admitted.
+Qed.
 
 Lemma right_son_check_hold: forall l pos len1 len2,
-  len2 <= len1 -> len2 >= 0 ->
+  len2 <= len1 -> len2 >= 1 ->
   ~right_son_check_list (firstn (Z.to_nat len1) l, pos) ->
   ~right_son_check_list (firstn (Z.to_nat len2) l, pos).
 Proof.
@@ -150,8 +271,7 @@ Proof.
       unfold legal_list_state.
       simpl fst; simpl snd.
       rewrite !Zlength_firstn.
-      (* lia. *)
-      give_up.
+      lia.
     - right.
       revert H1.
       unfold get_list_val.
@@ -165,11 +285,10 @@ Proof.
       pose proof (Znth_firstn (firstn (Z.to_nat len1) l) (pos*2+1) len2 H5).
       rewrite H6, H7.
       tauto.
-(* Qed. *)
-Admitted.
+Qed.
 
 Lemma son_check_hold: forall l pos len1 len2,
-  len2 <= len1 -> len2 >= 0 ->
+  len2 <= len1 -> len2 >= 1 ->
   ~left_son_check_list (firstn (Z.to_nat len1) l, pos) /\
   ~right_son_check_list (firstn (Z.to_nat len1) l, pos) ->
   ~left_son_check_list (firstn (Z.to_nat len2) l, pos) /\ ~right_son_check_list (firstn (Z.to_nat len2) l, pos).
@@ -214,6 +333,22 @@ Proof.
     reflexivity.
   +   
 Admitted.
+
+Definition list_swap (l: list Z) (i j: Z) : list Z :=
+  upd_Znth i (upd_Znth j l (Znth i l)) (Znth j l).
+
+Lemma list_swap_len: forall l i j,
+  0 <= i < Zlength l -> 0 <= j < Zlength l ->
+  Zlength (list_swap l i j) = Zlength l.
+Proof.
+  intros.
+  unfold list_swap.
+  rewrite !upd_Znth_Zlength.
+  + reflexivity.
+  + lia.
+  + rewrite upd_Znth_Zlength by lia.
+    lia.
+Qed.
 
 (* Lemma up_pos_in_range: forall l l' x y size,
   (up l size x y l') -> (1 <= y /\ y <= size).

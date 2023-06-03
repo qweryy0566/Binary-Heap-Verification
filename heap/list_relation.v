@@ -17,6 +17,7 @@ Local Open Scope list_scope.
 Require Import SetsClass.SetsClass.
 Local Open Scope sets.
 Import SetsNotation.
+
 Lemma list_equal : forall (A: Type) (l1 l2: list A) {d: Inhabitant A},
   l1 = l2 <-> Zlength l1 = Zlength l2 /\
   forall (i: Z), 0 <= i < Zlength l1 -> Znth i l1 = Znth i l2.
@@ -49,7 +50,7 @@ Definition get_list_val(l: list_state): Z :=
   Znth ((snd l)) (fst l).
 
 Definition legal_list_state(l: list_state): Prop:=
-  ((snd l) <= Zlength (fst l)) /\ 1 <= (snd l).
+  ((snd l) < Zlength (fst l)) /\ 1 <= (snd l).
 
 Definition list_up_succeed:
   list_state -> list_state -> Prop :=
@@ -267,3 +268,5 @@ Proof.
     try_list_unfold.
     lia.
 Qed.
+
+Check upd_Znth.

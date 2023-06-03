@@ -71,7 +71,7 @@ Definition f_up_hint (para: GET_PARA_TYPE f_up_spec_annotation) :=
     (Csequence
       (Cassert
         (EX Hl0 pos1 a pos,
-          (PROP ((up_inv Hl size0 pos0 pos1 Hl0); (pos = (Vint (IntRepr pos1))); (a = a0); (Z.le pos1 size0); (Z.le 1 pos1); (Z.le (Z.add size0 1) Maxsize); (Z.le 1 size0); (Z.le pos0 size0); (Z.le 1 pos0); (Z.le Maxsize (Int.max_signed )); (Z.le 2 Maxsize); (all_int Hl))
+          (PROP ((up_inv Hl size0 pos0 pos1 Hl0); (pos = (Vint (IntRepr pos1))); (a = a0); (Z.le pos1 size0); (Z.le 1 pos1); (Z.le (Z.add size0 1) Maxsize); (Z.le 1 size0); (Z.le pos0 size0); (Z.le 1 pos0); (Z.le Maxsize (Int.max_signed )); (Z.le 2 Maxsize); (all_int Hl0))
           LOCAL (temp _a a; temp _pos pos)
           SEP ((store_int_array a0 Hl0 Maxsize))))%assert)
       (Csequence
@@ -283,40 +283,45 @@ Definition f_pop_hint (para: GET_PARA_TYPE f_pop_spec_annotation) :=
   | (size_p, size0, a0, Maxsize, Hl, a', size') =>
   (Csequence
     (Csequence
-      (Cset _t'5 (Ederef (Etempvar _size (tptr tint)) tint))
-      (Cifthenelse (Ebinop Oeq (Etempvar _t'5 tint)
+      (Cset _t'6 (Ederef (Etempvar _size (tptr tint)) tint))
+      (Cifthenelse (Ebinop Oeq (Etempvar _t'6 tint)
                      (Econst_int (Int.repr 0) tint) tint)
         (Creturn (Some (Eunop Oneg (Econst_int (Int.repr 1) tint) tint)))
         Cskip))
     (Csequence
       (Csequence
-        (Cset _t'3 (Ederef (Etempvar _size (tptr tint)) tint))
+        (Cset _t'4 (Ederef (Etempvar _size (tptr tint)) tint))
         (Csequence
-          (Cset _t'4
+          (Cset _t'5
             (Ederef
-              (Ebinop Oadd (Etempvar _a (tptr tint)) (Etempvar _t'3 tint)
+              (Ebinop Oadd (Etempvar _a (tptr tint)) (Etempvar _t'4 tint)
                 (tptr tint)) tint))
           (Cassign
             (Ederef
               (Ebinop Oadd (Etempvar _a (tptr tint))
                 (Econst_int (Int.repr 1) tint) (tptr tint)) tint)
-            (Etempvar _t'4 tint))))
+            (Etempvar _t'5 tint))))
       (Csequence
         (Csequence
-          (Cset _t'2 (Ederef (Etempvar _size (tptr tint)) tint))
+          (Cset _t'3 (Ederef (Etempvar _size (tptr tint)) tint))
           (Cassign (Ederef (Etempvar _size (tptr tint)) tint)
-            (Ebinop Osub (Etempvar _t'2 tint) (Econst_int (Int.repr 1) tint)
+            (Ebinop Osub (Etempvar _t'3 tint) (Econst_int (Int.repr 1) tint)
               tint)))
         (Csequence
           (Csequence
             (Cset _t'1 (Ederef (Etempvar _size (tptr tint)) tint))
-            (Ccall None
-              (Evar _down (Tfunction
-                            (Tcons (tptr tint)
-                              (Tcons tint (Tcons tint Tnil))) tvoid
-                            cc_default))
-              ((Etempvar _a (tptr tint)) :: (Etempvar _t'1 tint) ::
-               (Econst_int (Int.repr 1) tint) :: nil)))
+            (Cifthenelse (Ebinop Oge (Etempvar _t'1 tint)
+                           (Econst_int (Int.repr 1) tint) tint)
+              (Csequence
+                (Cset _t'2 (Ederef (Etempvar _size (tptr tint)) tint))
+                (Ccall None
+                  (Evar _down (Tfunction
+                                (Tcons (tptr tint)
+                                  (Tcons tint (Tcons tint Tnil))) tvoid
+                                cc_default))
+                  ((Etempvar _a (tptr tint)) :: (Etempvar _t'2 tint) ::
+                   (Econst_int (Int.repr 1) tint) :: nil)))
+              Cskip))
           (Creturn (Some (Econst_int (Int.repr 0) tint)))))))  end.
 
 

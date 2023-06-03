@@ -11,7 +11,7 @@ Module Info.
   Definition abi := "standard"%string.
   Definition bitsize := 32.
   Definition big_endian := false.
-  Definition source_file := "cprogs/heap.c"%string.
+  Definition source_file := "../FinalProject/heap.c"%string.
   Definition normalized := true.
 End Info.
 
@@ -86,6 +86,7 @@ Definition _t'2 : ident := 68%positive.
 Definition _t'3 : ident := 69%positive.
 Definition _t'4 : ident := 70%positive.
 Definition _t'5 : ident := 71%positive.
+Definition _t'6 : ident := 72%positive.
 
 Definition f_swap := {|
   fn_return := tvoid;
@@ -253,44 +254,50 @@ Definition f_pop := {|
   fn_callconv := cc_default;
   fn_params := ((_a, (tptr tint)) :: (_size, (tptr tint)) :: nil);
   fn_vars := nil;
-  fn_temps := ((_t'5, tint) :: (_t'4, tint) :: (_t'3, tint) ::
-               (_t'2, tint) :: (_t'1, tint) :: nil);
+  fn_temps := ((_t'6, tint) :: (_t'5, tint) :: (_t'4, tint) ::
+               (_t'3, tint) :: (_t'2, tint) :: (_t'1, tint) :: nil);
   fn_body :=
 (Ssequence
   (Ssequence
-    (Sset _t'5 (Ederef (Etempvar _size (tptr tint)) tint))
-    (Sifthenelse (Ebinop Oeq (Etempvar _t'5 tint)
+    (Sset _t'6 (Ederef (Etempvar _size (tptr tint)) tint))
+    (Sifthenelse (Ebinop Oeq (Etempvar _t'6 tint)
                    (Econst_int (Int.repr 0) tint) tint)
       (Sreturn (Some (Eunop Oneg (Econst_int (Int.repr 1) tint) tint)))
       Sskip))
   (Ssequence
     (Ssequence
-      (Sset _t'3 (Ederef (Etempvar _size (tptr tint)) tint))
+      (Sset _t'4 (Ederef (Etempvar _size (tptr tint)) tint))
       (Ssequence
-        (Sset _t'4
+        (Sset _t'5
           (Ederef
-            (Ebinop Oadd (Etempvar _a (tptr tint)) (Etempvar _t'3 tint)
+            (Ebinop Oadd (Etempvar _a (tptr tint)) (Etempvar _t'4 tint)
               (tptr tint)) tint))
         (Sassign
           (Ederef
             (Ebinop Oadd (Etempvar _a (tptr tint))
               (Econst_int (Int.repr 1) tint) (tptr tint)) tint)
-          (Etempvar _t'4 tint))))
+          (Etempvar _t'5 tint))))
     (Ssequence
       (Ssequence
-        (Sset _t'2 (Ederef (Etempvar _size (tptr tint)) tint))
+        (Sset _t'3 (Ederef (Etempvar _size (tptr tint)) tint))
         (Sassign (Ederef (Etempvar _size (tptr tint)) tint)
-          (Ebinop Osub (Etempvar _t'2 tint) (Econst_int (Int.repr 1) tint)
+          (Ebinop Osub (Etempvar _t'3 tint) (Econst_int (Int.repr 1) tint)
             tint)))
       (Ssequence
         (Ssequence
           (Sset _t'1 (Ederef (Etempvar _size (tptr tint)) tint))
-          (Scall None
-            (Evar _down (Tfunction
-                          (Tcons (tptr tint) (Tcons tint (Tcons tint Tnil)))
-                          tvoid cc_default))
-            ((Etempvar _a (tptr tint)) :: (Etempvar _t'1 tint) ::
-             (Econst_int (Int.repr 1) tint) :: nil)))
+          (Sifthenelse (Ebinop Oge (Etempvar _t'1 tint)
+                         (Econst_int (Int.repr 1) tint) tint)
+            (Ssequence
+              (Sset _t'2 (Ederef (Etempvar _size (tptr tint)) tint))
+              (Scall None
+                (Evar _down (Tfunction
+                              (Tcons (tptr tint)
+                                (Tcons tint (Tcons tint Tnil))) tvoid
+                              cc_default))
+                ((Etempvar _a (tptr tint)) :: (Etempvar _t'2 tint) ::
+                 (Econst_int (Int.repr 1) tint) :: nil)))
+            Sskip))
         (Sreturn (Some (Econst_int (Int.repr 0) tint)))))))
 |}.
 

@@ -20,7 +20,7 @@ Definition functional_correctness_statement: Prop :=
   let Delta_specs := Delta_specs_up in
   let Delta := Delta_up Delta_specs in
   semax Delta (EX Hl0 pos1 a pos,
-                (PROP ((up_inv Hl size0 pos0 pos1 Hl0); (pos = (Vint (IntRepr pos1))); (a = a0); (Z.le pos1 size0); (Z.le 1 pos1); (Z.le (Z.add size0 1) Maxsize); (Z.le 1 size0); (Z.le pos0 size0); (Z.le 1 pos0); (Z.le Maxsize (Int.max_signed )); (Z.le 2 Maxsize); (all_int Hl))
+                (PROP ((up_inv Hl size0 pos0 pos1 Hl0); (pos = (Vint (IntRepr pos1))); (a = a0); (Z.le pos1 size0); (Z.le 1 pos1); (Z.le (Z.add size0 1) Maxsize); (Z.le 1 size0); (Z.le pos0 size0); (Z.le 1 pos0); (Z.le Maxsize (Int.max_signed )); (Z.le 2 Maxsize); (all_int Hl0))
                 LOCAL (temp _a a; temp _pos pos)
                 SEP ((store_int_array a0 Hl0 Maxsize))))%assert
   (Ssequence

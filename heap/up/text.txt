@@ -1,0 +1,304 @@
+tarray: type -> Z -> type
+deref_noload_tarray:
+  forall (ty : type) (n : Z),
+  deref_noload (tarray ty n) = ANNOTATION_WITH v : val, v
+sizeof_tarray_tuchar:
+  forall {cs : composite_env} (n : Z), 0 <= n -> sizeof (tarray tuchar n) = n
+sizeof_tarray_tschar:
+  forall {cs : composite_env} (n : Z), 0 <= n -> sizeof (tarray tschar n) = n
+isptr_field_compatible0_tarray:
+  forall {cs : compspecs} (t : type),
+  complete_legal_cosu_type t = true ->
+  forall p : val, isptr p -> field_compatible (tarray t 0) [] p
+memory_block_data_at__tarray_tschar_eq:
+  forall {cs : compspecs} (sh : share) (p : val) (n : Z),
+  0 <= n < Ptrofs.modulus ->
+  memory_block sh n p = data_at_ sh (tarray tschar n) p
+memory_block_data_at__tarray_tuchar_eq:
+  forall {cs : compspecs} (sh : share) (p : val) (n : Z),
+  0 <= n < Ptrofs.modulus ->
+  memory_block sh n p = data_at_ sh (tarray tuchar n) p
+data_at__tarray:
+  forall {CS : compspecs} (sh : Share.t) (t : type) (n : Z),
+  data_at_ sh (tarray t n) =
+  data_at sh (tarray t n) (list_repeat (Z.to_nat n) (default_val t))
+memory_block_data_at__tarray_tuchar:
+  forall {cs : compspecs} (sh : share) (p : val) (n : Z),
+  0 <= n < Ptrofs.modulus ->
+  memory_block sh n p |-- data_at_ sh (tarray tuchar n) p
+memory_block_data_at__tarray_tschar:
+  forall {cs : compspecs} (sh : share) (p : val) (n : Z),
+  0 <= n < Ptrofs.modulus ->
+  memory_block sh n p |-- data_at_ sh (tarray tschar n) p
+data_at_tarray_tschar_tuchar:
+  forall {cs : compspecs} (sh : Share.t) (n : Z) (bytes : list byte)
+	(p : val),
+  data_at sh (tarray tschar n) (map Vbyte bytes) p =
+  data_at sh (tarray tuchar n) (map Vubyte bytes) p
+memory_block_field_compatible_tarraytschar_ent:
+  forall {cs : compspecs} (sh : share) (n : Z) (p : val),
+  0 <= n < Ptrofs.modulus ->
+  memory_block sh n p |-- !! field_compatible (tarray tschar n) [] p
+memory_block_field_compatible_tarraytuchar_ent:
+  forall {cs : compspecs} (sh : share) (n : Z) (p : val),
+  0 <= n < Ptrofs.modulus ->
+  memory_block sh n p |-- !! field_compatible (tarray tuchar n) [] p
+data_at__tarray':
+  forall {CS : compspecs} (sh : Share.t) (t : type) 
+	(n : Z) (v : list (reptype t)),
+  v = list_repeat (Z.to_nat n) (default_val t) ->
+  data_at_ sh (tarray t n) = data_at sh (tarray t n) v
+memory_block_field_compatible_tarraytuchar:
+  forall {cs : compspecs} (sh : share) (n : Z) (p : val),
+  0 <= n < Ptrofs.modulus ->
+  memory_block sh n p =
+  !! field_compatible (tarray tuchar n) [] p && memory_block sh n p
+memory_block_field_compatible_tarraytschar:
+  forall {cs : compspecs} (sh : share) (n : Z) (p : val),
+  0 <= n < Ptrofs.modulus ->
+  memory_block sh n p =
+  !! field_compatible (tarray tschar n) [] p && memory_block sh n p
+Tarray: type -> Z -> attr -> type
+compute_root_type_Tarray_expr:
+  forall (t : type) (n1 : Z) (a1 : attr) (n2 : Z) (a2 : attr),
+  compute_root_type (Tarray t n1 a1) RRRR (Tarray t n2 a2)
+binop_lemmas3.tc_val_PM_Tarray:
+  forall (t : type) (n : Z) (a : attr) (v : val),
+  is_pointer_or_null v -> binop_lemmas3.tc_val_PM (Tarray t n a) v
+deref_noload_Tarray:
+  forall (ty : type) (n : Z) (a : attr),
+  deref_noload (Tarray ty n a) = ANNOTATION_WITH v : val, v
+nested_pred_Tarray:
+  forall {cs : compspecs} (atom_pred : type -> bool) 
+	(t : type) (n : Z) (a : attr),
+  nested_pred atom_pred (Tarray t n a) = true ->
+  nested_pred atom_pred t = true
+Tarray_sizeof_0:
+  forall {cs : compspecs} (t : type) (n : Z) (a : attr),
+  sizeof (Tarray t n a) = 0 -> sizeof t = 0 \/ n <= 0
+align_compatible_rec_Tarray_inv:
+  forall (cenv : composite_env) (t : type) (n : Z) (a : attr) (z : Z),
+  align_compatible_rec cenv (Tarray t n a) z ->
+  forall i : Z, 0 <= i < n -> align_compatible_rec cenv t (z + sizeof t * i)
+align_compatible_rec_Tarray:
+  forall (cenv : composite_env) (t : type) (n : Z) (a : attr) (z : Z),
+  (forall i : Z, 0 <= i < n -> align_compatible_rec cenv t (z + sizeof t * i)) ->
+  align_compatible_rec cenv (Tarray t n a) z
+data_at__Tarray:
+  forall {CS : compspecs} (sh : Share.t) (t : type) (n : Z) (a : attr),
+  data_at_ sh (Tarray t n a) =
+  data_at sh (Tarray t n a) (list_repeat (Z.to_nat n) (default_val t))
+data_at__Tarray':
+  forall {CS : compspecs} (sh : Share.t) (t : type) 
+	(n : Z) (a : attr) (v : list (reptype t)),
+  v = list_repeat (Z.to_nat n) (default_val t) ->
+  data_at_ sh (Tarray t n a) = data_at sh (Tarray t n a) v
+field_compatible_cons_Tarray:
+  forall {cs : compspecs} (i : Z) (t t0 : type) (n : Z) 
+	(a : attr) (gfs : list gfield) (p : val),
+  nested_field_type t gfs = Tarray t0 n a ->
+  field_compatible t gfs p -> 0 <= i < n -> field_compatible t (gfs SUB i) p
+field_compatible0_cons_Tarray:
+  forall {cs : compspecs} (k : Z) (t : type) (n : Z) 
+	(a : attr) (gfs : list gfield) (p : val) (t' : type),
+  nested_field_type t gfs = Tarray t' n a ->
+  field_compatible t gfs p ->
+  0 <= k <= n -> field_compatible0 t (gfs SUB k) p
+field_compatible_Tarray_split:
+  forall {cs : compspecs} (t : type) (i n : Z) (d : val),
+  0 <= i <= n ->
+  field_compatible (tarray t n) [] d <->
+  field_compatible (tarray t i) [] d /\
+  field_compatible (tarray t (n - i)) []
+	(field_address0 (tarray t n) [ArraySubsc i] d)
+floyd.nested_loadstore.reptype_Tarray_JMeq_constr0:
+  forall {cs : compspecs} (t : type) (gfs : list gfield) 
+	(t0 : type) (n : Z) (a : attr) (v : reptype (nested_field_type t gfs)),
+  legal_nested_field t gfs ->
+  nested_field_type t gfs = Tarray t0 n a ->
+  {v' : list (reptype (nested_field_type t (gfs SUB 0))) | JMeq v v'}
+reptype_Tarray_JMeq_constr0:
+  forall {cs : compspecs} (t : type) (gfs : list gfield) 
+	(t0 : type) (n : Z) (a : attr) (v : reptype (nested_field_type t gfs)),
+  legal_nested_field t gfs ->
+  nested_field_type t gfs = Tarray t0 n a ->
+  {v' : list (reptype (nested_field_type t (gfs SUB 0))) | JMeq v v'}
+floyd.nested_loadstore.reptype_Tarray_JMeq_constr2:
+  forall {cs : compspecs} (t : type) (gfs : list gfield) 
+	(t0 : type) (n : Z) (a : attr) (i : Z)
+    (v' : reptype (nested_field_type t (gfs SUB i))),
+  legal_nested_field t gfs ->
+  nested_field_type t gfs = Tarray t0 n a ->
+  {v : reptype (nested_field_type t (gfs SUB 0)) | JMeq v' v}
+floyd.nested_loadstore.reptype_Tarray_JMeq_constr1:
+  forall {cs : compspecs} (t : type) (gfs : list gfield) 
+	(t0 : type) (n : Z) (a : attr) (i : Z)
+    (v : reptype (nested_field_type t (gfs SUB i))),
+  legal_nested_field t gfs ->
+  nested_field_type t gfs = Tarray t0 n a ->
+  {v' : reptype (gfield_type (nested_field_type t gfs) (ArraySubsc i))
+  | JMeq v v'}
+reptype_Tarray_JMeq_constr1:
+  forall {cs : compspecs} (t : type) (gfs : list gfield) 
+	(t0 : type) (n : Z) (a : attr) (i : Z)
+    (v : reptype (nested_field_type t (gfs SUB i))),
+  legal_nested_field t gfs ->
+  nested_field_type t gfs = Tarray t0 n a ->
+  {v' : reptype (gfield_type (nested_field_type t gfs) (ArraySubsc i))
+  | JMeq v v'}
+reptype_Tarray_JMeq_constr2:
+  forall {cs : compspecs} (t : type) (gfs : list gfield) 
+	(t0 : type) (n : Z) (a : attr) (i : Z)
+    (v' : reptype (nested_field_type t (gfs SUB i))),
+  legal_nested_field t gfs ->
+  nested_field_type t gfs = Tarray t0 n a ->
+  {v : reptype (nested_field_type t (gfs SUB 0)) | JMeq v' v}
+split2_data_at__Tarray_tuchar:
+  forall {cs : compspecs} (sh : Share.t) (n n1 : Z) (p : val),
+  0 <= n1 <= n ->
+  isptr p ->
+  field_compatible (Tarray tuchar n noattr) [] p ->
+  data_at_ sh (Tarray tuchar n noattr) p =
+  (data_at_ sh (Tarray tuchar n1 noattr) p *
+   data_at_ sh (Tarray tuchar (n - n1) noattr)
+	 (field_address0 (Tarray tuchar n noattr) [ArraySubsc n1] p))%logic
+split2_data_at__Tarray_tschar:
+  forall {cs : compspecs} (sh : Share.t) (n n1 : Z) (p : val),
+  0 <= n1 <= n ->
+  isptr p ->
+  field_compatible (Tarray tschar n noattr) [] p ->
+  data_at_ sh (Tarray tschar n noattr) p =
+  (data_at_ sh (Tarray tschar n1 noattr) p *
+   data_at_ sh (Tarray tschar (n - n1) noattr)
+	 (field_address0 (Tarray tschar n noattr) [ArraySubsc n1] p))%logic
+field_compatible0_Tarray_offset:
+  forall {cs : compspecs} (t : type) (n i n' i' : Z) (p p' : val),
+  field_compatible0 (Tarray t n' noattr) [ArraySubsc i'] p ->
+  naturally_aligned t ->
+  0 <= n <= n' ->
+  0 <= i <= n ->
+  n - i <= n' - i' ->
+  i <= i' ->
+  p' = offset_val (sizeof t * (i' - i)) p ->
+  field_compatible0 (Tarray t n noattr) [ArraySubsc i] p'
+split2_data_at_Tarray_tschar:
+  forall {cs : compspecs} (sh : Share.t) (n n1 : Z) (v : list val) (p : val),
+  0 <= n1 <= n ->
+  Zlength v = n ->
+  data_at sh (Tarray tschar n noattr) v p =
+  (data_at sh (Tarray tschar n1 noattr) (sublist 0 n1 v) p *
+   data_at sh (Tarray tschar (n - n1) noattr) (sublist n1 n v)
+	 (field_address0 (Tarray tschar n noattr) [ArraySubsc n1] p))%logic
+split2_data_at_Tarray_tuchar:
+  forall {cs : compspecs} (sh : Share.t) (n n1 : Z) (v : list val) (p : val),
+  0 <= n1 <= n ->
+  Zlength v = n ->
+  data_at sh (Tarray tuchar n noattr) v p =
+  (data_at sh (Tarray tuchar n1 noattr) (sublist 0 n1 v) p *
+   data_at sh (Tarray tuchar (n - n1) noattr) (sublist n1 n v)
+	 (field_address0 (Tarray tuchar n noattr) [ArraySubsc n1] p))%logic
+field_at_Tarray:
+  forall {cs : compspecs} (sh : Share.t) (t : type) 
+	(gfs : list gfield) (t0 : type) (n : Z) (a : attr)
+    (v1 : reptype (nested_field_type t gfs))
+    (v2 : list (reptype (nested_field_type t (gfs SUB 0)))) 
+    (p : val),
+  legal_nested_field t gfs ->
+  nested_field_type t gfs = Tarray t0 n a ->
+  0 <= n -> JMeq v1 v2 -> field_at sh t gfs v1 p = array_at sh t gfs 0 n v2 p
+split2_data_at_Tarray_app:
+  forall {cs : compspecs} (mid n : Z) (sh : Share.t) 
+	(t : type) (v1 v2 : list (reptype t)) (p : val),
+  Zlength v1 = mid ->
+  Zlength v2 = n - mid ->
+  data_at sh (tarray t n) (v1 ++ v2)%aclight p =
+  (data_at sh (tarray t mid) v1 p *
+   data_at sh (tarray t (n - mid)) v2
+     (field_address0 (tarray t n) [ArraySubsc mid] p))%logic
+split3_data_at_Tarray_tschar:
+  forall {cs : compspecs} (sh : Share.t) (n n1 n2 : Z) 
+	(v : list val) (p : val),
+  0 <= n1 <= n2 ->
+  n2 <= n ->
+  Zlength v = n ->
+  data_at sh (Tarray tschar n noattr) v p =
+  (data_at sh (Tarray tschar n1 noattr) (sublist 0 n1 v) p *
+   data_at sh (Tarray tschar (n2 - n1) noattr) (sublist n1 n2 v)
+     (field_address0 (Tarray tschar n noattr) [ArraySubsc n1] p) *
+   data_at sh (Tarray tschar (n - n2) noattr) (sublist n2 n v)
+     (field_address0 (Tarray tschar n noattr) [ArraySubsc n2] p))%logic
+split3_data_at_Tarray_tuchar:
+  forall {cs : compspecs} (sh : Share.t) (n n1 n2 : Z) 
+	(v : list val) (p : val),
+  0 <= n1 <= n2 ->
+  n2 <= n ->
+  Zlength v = n ->
+  data_at sh (Tarray tuchar n noattr) v p =
+  (data_at sh (Tarray tuchar n1 noattr) (sublist 0 n1 v) p *
+   data_at sh (Tarray tuchar (n2 - n1) noattr) (sublist n1 n2 v)
+     (field_address0 (Tarray tuchar n noattr) [ArraySubsc n1] p) *
+   data_at sh (Tarray tuchar (n - n2) noattr) (sublist n2 n v)
+     (field_address0 (Tarray tuchar n noattr) [ArraySubsc n2] p))%logic
+split2_data_at_Tarray_unfold:
+  forall {cs : compspecs} (sh : Share.t) (t : type) 
+	(n n1 : Z) (v v' v1 v2 : list (reptype t)) (p : val),
+  0 <= n1 <= n ->
+  v = v' ->
+  v1 = sublist 0 n1 v' ->
+  v2 = sublist n1 n v' ->
+  data_at sh (Tarray t n noattr) v p
+  |-- (data_at sh (Tarray t n1 noattr) v1 p *
+       data_at sh (Tarray t (n - n1) noattr) v2
+         (field_address0 (Tarray t n noattr) [ArraySubsc n1] p))%logic
+value_fits_Tarray:
+  forall {cs : compspecs} (t : type) (v : reptype t) 
+	(t' : type) (n : Z) (a : attr) (v' : list (reptype t')) 
+    (r : Prop),
+  t = Tarray t' n a ->
+  JMeq (unfold_reptype v) v' ->
+  n >= 0 ->
+  r = (Zlength v' = n /\ Forall (value_fits t') v') -> value_fits t v = r
+split2_data_at_Tarray:
+  forall {cs : compspecs} (sh : Share.t) (t : type) 
+	(n n1 : Z) (v v' v1 v2 : list (reptype t)) (p : val),
+  0 <= n1 <= n ->
+  n <= Zlength v' ->
+  v = sublist 0 n v' ->
+  v1 = sublist 0 n1 v' ->
+  v2 = sublist n1 n v' ->
+  data_at sh (Tarray t n noattr) v p =
+  (data_at sh (Tarray t n1 noattr) v1 p *
+   data_at sh (Tarray t (n - n1) noattr) v2
+     (field_address0 (Tarray t n noattr) [ArraySubsc n1] p))%logic
+split2_data_at_Tarray_fold:
+  forall {cs : compspecs} (sh : Share.t) (t : type) 
+	(n n1 : Z) (v v' v1 v2 : list (reptype t)) (p : val),
+  0 <= n1 <= n ->
+  n <= Zlength v' ->
+  v = sublist 0 n v' ->
+  v1 = sublist 0 n1 v' ->
+  v2 = sublist n1 n v' ->
+  (data_at sh (Tarray t n1 noattr) v1 p *
+   data_at sh (Tarray t (n - n1) noattr) v2
+     (field_address0 (Tarray t n noattr) [ArraySubsc n1] p))%logic
+  |-- data_at sh (Tarray t n noattr) v p
+split3_data_at_Tarray:
+  forall {cs : compspecs} (sh : Share.t) (t : type) 
+	(n n1 n2 : Z) (v v' v1 v2 v3 : list (reptype t)) 
+    (p : val),
+  naturally_aligned t ->
+  0 <= n1 <= n2 ->
+  n2 <= n <= Zlength v' ->
+  v = sublist 0 n v' ->
+  v1 = sublist 0 n1 v' ->
+  v2 = sublist n1 n2 v' ->
+  v3 = sublist n2 n v' ->
+  data_at sh (Tarray t n noattr) v p =
+  (data_at sh (Tarray t n1 noattr) v1 p *
+   data_at sh (Tarray t (n2 - n1) noattr) v2
+     (field_address0 (Tarray t n noattr) [ArraySubsc n1] p) *
+   data_at sh (Tarray t (n - n2) noattr) v3
+     (field_address0 (Tarray t n noattr) [ArraySubsc n2] p))%logic
+Zlength_default_val_Tarray_tuchar:
+  forall {cs : compspecs} (n : Z) (a : attr),
+  0 <= n -> Zlength (default_val (Tarray tuchar n a)) = n
