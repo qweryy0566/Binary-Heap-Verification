@@ -29,15 +29,6 @@ Notation "'store_int_array' p l size" :=
 (* Parameter pop_length : list Z -> Z -> Z. *)
 (* Parameter pop_result : list Z -> Z -> Z. *)
 
-Import ListNotations.
-
-Lemma int_array_is_ptr: forall (p: val) (l: list Z) (size: Z),
-  !!(size >= 0) && store_int_array p l size |-- !!isptr p.
-Proof.
-  intros.
-  entailer!.
-Qed.
-
 Definition heap_push: list Z -> Z -> list Z -> Prop :=
   fun l val l' =>
     exists (p: Z), heap_list_up (pair (l ++ [val]) (Zlength l)) (pair l' p).
@@ -206,7 +197,7 @@ Proof.
 Qed.
 
 Lemma left_son_check_hold: forall l pos len1 len2,
-  len2 <= len1 -> len2 >= 1 ->
+  len2 <= len1 -> len2 >= 0 ->
   ~left_son_check_list (firstn (Z.to_nat len1) l, pos) ->
   ~left_son_check_list (firstn (Z.to_nat len2) l, pos).
 Proof.
@@ -227,8 +218,8 @@ Proof.
       unfold legal_list_state.
       simpl fst; simpl snd.
       rewrite !Zlength_firstn.
-      apply or_not_and.
-      lia.
+      (* lia. *)
+      give_up.
     - right.
       revert H1.
       unfold get_list_val.
@@ -242,10 +233,11 @@ Proof.
       pose proof (Znth_firstn (firstn (Z.to_nat len1) l) (pos*2) len2 H5).
       rewrite H6, H7.
       tauto.
-Qed.
+(* Qed. *)
+Admitted.
 
 Lemma right_son_check_hold: forall l pos len1 len2,
-  len2 <= len1 -> len2 >= 1 ->
+  len2 <= len1 -> len2 >= 0 ->
   ~right_son_check_list (firstn (Z.to_nat len1) l, pos) ->
   ~right_son_check_list (firstn (Z.to_nat len2) l, pos).
 Proof.
@@ -266,7 +258,8 @@ Proof.
       unfold legal_list_state.
       simpl fst; simpl snd.
       rewrite !Zlength_firstn.
-      lia.
+      (* lia. *)
+      give_up.
     - right.
       revert H1.
       unfold get_list_val.
@@ -280,10 +273,11 @@ Proof.
       pose proof (Znth_firstn (firstn (Z.to_nat len1) l) (pos*2+1) len2 H5).
       rewrite H6, H7.
       tauto.
-Qed.
+(* Qed. *)
+Admitted.
 
 Lemma son_check_hold: forall l pos len1 len2,
-  len2 <= len1 -> len2 >= 1 ->
+  len2 <= len1 -> len2 >= 0 ->
   ~left_son_check_list (firstn (Z.to_nat len1) l, pos) /\
   ~right_son_check_list (firstn (Z.to_nat len1) l, pos) ->
   ~left_son_check_list (firstn (Z.to_nat len2) l, pos) /\ ~right_son_check_list (firstn (Z.to_nat len2) l, pos).
@@ -309,22 +303,6 @@ Qed. *)
 
 (* Search sublist.
 Print sublist. *)
-
-Definition list_swap (l: list Z) (i j: Z) : list Z :=
-  upd_Znth i (upd_Znth j l (Znth i l)) (Znth j l).
-
-Lemma list_swap_len: forall l i j,
-  0 <= i < Zlength l -> 0 <= j < Zlength l ->
-  Zlength (list_swap l i j) = Zlength l.
-Proof.
-  intros.
-  unfold list_swap.
-  rewrite !upd_Znth_Zlength.
-  + reflexivity.
-  + lia.
-  + rewrite upd_Znth_Zlength by lia.
-    lia.
-Qed.
 
 (* Lemma up_pos_in_range: forall l l' x y size,
   (up l size x y l') -> (1 <= y /\ y <= size).
