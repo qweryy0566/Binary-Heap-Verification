@@ -63,7 +63,7 @@ void down(int *a, int size, int pos) {
 
   /*@ Inv
         exists Hl0 pos1, 
-          all_int(Hl) && 2 <= Maxsize && 2 * Maxsize <= INT_MAX &&
+          all_int(Hl0) && 2 <= Maxsize && 2 * Maxsize <= INT_MAX &&
           1 <= pos0 && pos0 <= size0 &&
           1 <= size0 && size0 + 1 <= Maxsize &&   
           1 <= pos1 && pos1 <= size0 && a == a0 &&

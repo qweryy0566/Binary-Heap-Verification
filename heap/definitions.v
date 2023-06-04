@@ -467,10 +467,9 @@ Proof.
 Qed.
 
 Lemma Zlor_add_one: forall x,
-  x >= 0 -> Z.lor (x * 2) 1 = x * 2 + 1.
+  x >= 0 -> Z.lor (2 * x) 1 = 2 * x + 1.
 Proof.
   intros.
-  replace (x * 2) with (2 * x) by lia.
   induction x; simpl.
   + reflexivity.
   + reflexivity.
@@ -527,17 +526,175 @@ Proof.
     Admitted. *)
 
 Lemma offset_val_field_address:
-  forall pos len a,
+  forall T pos len a,
     0 <= pos < len ->
-    field_compatible (tarray tint len) [] a ->
-    offset_val (sizeof tint * pos) a = field_address (tarray tint len) [ArraySubsc pos] a.
+    field_compatible (tarray T len) [] a ->
+    offset_val (sizeof T * pos) a = field_address (tarray T len) [ArraySubsc pos] a.
 Proof.
   intros.
-  assert (field_compatible (tarray tint len) [ArraySubsc pos] a). {
+  assert (field_compatible (tarray T len) [ArraySubsc pos] a). {
     apply field_compatible_cons.
     split; [lia | tauto].
   }
   pose proof field_compatible_field_address _ _ _ H1.
   rewrite H2.
   tauto. 
+Qed.
+
+Lemma field_address_array_smaller:
+  forall T size small_size a pos,
+    0 <= small_size <= size -> 0 <= pos < small_size ->
+    field_compatible (tarray T size) [] a ->
+    field_address (tarray T size) [ArraySubsc pos] a =
+    field_address (tarray T small_size) [ArraySubsc pos] a.
+Proof.
+  intros.
+  rewrite <- offset_val_field_address; [ | lia | tauto].
+  eapply field_compatible_Tarray_split in H1.
+  + destruct H1.
+    rewrite <- offset_val_field_address; [tauto | lia | apply H1].
+  + lia.
+Qed.
+
+Lemma field_address_array_relocate:
+  forall T size a p1 p2,
+    0 <= p1 < size -> 0 <= p2 < size -> p1 <= p2 ->
+    field_compatible (tarray T size) [] a ->
+    field_address (tarray T size) [ArraySubsc p2] a =
+    field_address (tarray T (size - p1)) [ArraySubsc (p2 - p1)] (field_address0 (tarray T size) [ArraySubsc p1] a).
+Proof.
+  intros.
+  rewrite field_address0_offset.
+  2: {
+    apply field_compatible0_cons.
+    simpl; split; [lia | tauto].
+  }
+  rewrite !field_address_offset.
+  3: {
+    apply field_compatible_cons.
+    simpl; split; [lia | tauto].
+  }
+  2: {
+    simpl.
+    apply field_compatible_cons.
+    simpl; split; [lia |].
+    pose proof field_compatible_Tarray_split T p1 size a ltac:(lia).
+    apply H3 in H2; destruct H2.
+    rewrite field_address0_offset in H4.
+    + tauto.
+    + apply field_compatible0_cons.
+      simpl; split; [lia | tauto].  
+  }
+  simpl.
+  rewrite offset_offset_val.
+  f_equal; lia.
+Qed.
+
+Lemma int_array_with_two_holes: forall a l size p1 p2,
+  0 <= p1 < size -> p1 < p2 < size -> size >= 0 ->
+  store_int_array a l size
+  |-- (store_int (field_address (tarray tint size) [ArraySubsc p1] a) (Znth p1 l) *
+       store_int (field_address (tarray tint size) [ArraySubsc p2] a) (Znth p2 l) *
+       SingletonHole.array_with_hole Tsh tint 0 (size - p2) (map Vint (map IntRepr (sublist p2 size l)))
+         (field_address0 (tarray tint size) [ArraySubsc p2] a) *
+       SingletonHole.array_with_hole Tsh tint p1 p2 (map Vint (map IntRepr (sublist 0 p2 l))) a)%logic.
+Proof.
+  intros.
+  sep_apply list_length; [lia | ].
+  Intros.
+  entailer!.
+  pose proof split2_data_at_Tarray Tsh tint (Zlength l) p2.
+  erewrite H5; [| lia | rewrite H4; lia | | |].
+  2: rewrite sublist_same; [tauto | tauto | rewrite H4; tauto].
+  2: rewrite !sublist_map; reflexivity.
+  2: rewrite !sublist_map; reflexivity.
+  change (Tarray tint p2 noattr) with (tarray tint p2).
+  change (Tarray tint (Zlength l - p2) noattr) with (tarray tint (Zlength l - p2)).
+  pose proof SingletonHole.array_with_hole_intro Tsh tint p1 p2 (map Vint (map Int.repr (sublist 0 p2 l))) a ltac:(lia).
+  rewrite !Znth_map in H6.
+  2: rewrite Zlength_sublist by lia; lia.
+  2: rewrite Zlength_map, Zlength_sublist by lia; lia.
+  rewrite !Znth_sublist in H6 by lia.
+  replace (p1 + 0) with p1 in H6 by lia.
+  rewrite (field_address_array_smaller _ _ p2 _ _); [| lia | lia | tauto].
+  sep_apply H6; entailer!.
+  change (Tarray tint (Zlength l) noattr) with (tarray tint (Zlength l)).
+  pose proof SingletonHole.array_with_hole_intro Tsh tint 0 (Zlength l - p2).
+  sep_apply H12; [lia |].
+  rewrite !Znth_map.
+  2: rewrite Zlength_sublist by lia; lia.
+  2: rewrite Zlength_map, Zlength_sublist by lia; lia.
+  rewrite !Znth_sublist by lia.
+  replace (0 + p2) with p2 by lia.
+  replace 0 with (p2 - p2) at 1 by lia.
+  rewrite <- (field_address_array_relocate _ _ _ p2 p2); [| lia | lia | lia | tauto].
+  entailer!.
+Qed.
+
+Lemma upd_Znth_twice_Zlength: forall {A} (l: list A) p1 p2 v1 v2,
+  0 <= p1 < Zlength l -> 0 <= p2 < Zlength l ->
+  Zlength (upd_Znth p1 (upd_Znth p2 l v2) v1) = Zlength l.
+Proof.
+  intros.
+  rewrite upd_Znth_Zlength.
+  + rewrite upd_Znth_Zlength; lia.
+  + rewrite upd_Znth_Zlength; lia. 
+Qed.
+
+Lemma int_array_with_two_holes_inv: forall a l p1 p2 v1 v2,
+  0 <= p1 < Zlength l -> p1 < p2 < Zlength l ->
+  field_compatible (tarray tint (Zlength l)) [] a ->
+  (store_int (field_address (tarray tint (Zlength l)) [ArraySubsc p1] a) v1 *
+   store_int (field_address (tarray tint (Zlength l)) [ArraySubsc p2] a) v2 *
+   SingletonHole.array_with_hole Tsh tint 0 (Zlength l - p2) (map Vint (map IntRepr (sublist p2 (Zlength l) l)))
+     (field_address0 (tarray tint (Zlength l)) [ArraySubsc p2] a) *
+   SingletonHole.array_with_hole Tsh tint p1 p2 (map Vint (map IntRepr (sublist 0 p2 l))) a)%logic
+  |-- store_int_array a (upd_Znth p1 (upd_Znth p2 l v2) v1) (Zlength l).
+Proof.
+  intros.
+  pose proof split2_data_at_Tarray Tsh tint (Zlength l) p2.
+  erewrite H2; [ | lia | | | |].
+  3: {
+    rewrite sublist_same; [reflexivity | lia | rewrite !Zlength_map].
+    rewrite !upd_Znth_twice_Zlength by lia.
+    reflexivity.
+  }
+  2: {
+    rewrite !Zlength_map.
+    rewrite upd_Znth_twice_Zlength by lia.
+    lia.
+  }
+  2: rewrite !sublist_map; reflexivity.
+  2: rewrite !sublist_map; reflexivity.
+  change (Tarray tint p2 noattr) with (tarray tint p2).
+  change (Tarray tint (Zlength l - p2) noattr) with (tarray tint (Zlength l - p2)).
+  pose proof SingletonHole.array_with_hole_elim Tsh tint p1 p2
+    (Vint(IntRepr(v1))) (map Vint (map IntRepr (sublist 0 p2 l))) a.
+  rewrite !upd_Znth_map in H3.
+  replace (sublist 0 p2 (upd_Znth p1 (upd_Znth p2 l v2) v1))
+    with (upd_Znth p1 (sublist 0 p2 l) v1).
+  rewrite (field_address_array_smaller _ _ p2 _ _); [| lia | lia | tauto].
+  2: {
+    rewrite sublist_upd_Znth_lr; [ | lia | rewrite upd_Znth_Zlength; lia].
+    rewrite sublist_upd_Znth_l by lia.
+    replace (p1 - 0) with p1 by lia.
+    tauto.
+  }
+  sep_apply H3; entailer!.
+  pose proof SingletonHole.array_with_hole_elim Tsh tint 0 (Zlength l - p2)
+    (Vint(IntRepr(v2))) (map Vint (map IntRepr (sublist p2 (Zlength l) l)))
+    (field_address0 (Tarray tint (Zlength l) noattr) [ArraySubsc p2] a).
+  rewrite !upd_Znth_map in H9.
+  replace (sublist p2 (Zlength l) (upd_Znth p1 (upd_Znth p2 l v2) v1))
+    with (upd_Znth 0 (sublist p2 (Zlength l) l) v2).
+  rewrite (field_address_array_relocate _ _ _ p2 p2); [| lia | lia | lia | tauto].
+  2: {
+    rewrite sublist_upd_Znth_r; [ | lia | rewrite upd_Znth_Zlength; lia].
+    rewrite sublist_upd_Znth_lr by lia.
+    replace (p2 - p2) with 0 by lia.
+    tauto.
+  }
+  replace (p2 - p2) with 0 by lia.
+  sep_apply H9.
+  entailer!.
 Qed.

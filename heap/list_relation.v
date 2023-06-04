@@ -103,8 +103,8 @@ Definition list_down_succeed:
   fun l1 l2 =>
     ((left_son_check_list l1) /\ ~(right_son_check_list l1) /\ (left_son_swap l1 l2)) \/
     ((left_son_check_list l1) /\ (right_son_check_list l1) /\ (
-      ((get_list_val (left_son l1)) > (get_list_val (right_son l1)) /\ (left_son_swap l1 l2))  \/
-      ((get_list_val (left_son l1)) <= (get_list_val (right_son l1)) /\ (right_son_swap l1 l2))
+      ((get_list_val (left_son l1)) >= (get_list_val (right_son l1)) /\ (left_son_swap l1 l2))  \/
+      ((get_list_val (left_son l1)) < (get_list_val (right_son l1)) /\ (right_son_swap l1 l2))
     )) \/
     (~(left_son_check_list l1) /\ (right_son_check_list l1) /\ (right_son_swap l1 l2)).
 
@@ -132,6 +132,11 @@ Ltac try_list_unfold :=
   unfold left_son_check_list; unfold left_son_swap; unfold left_son; 
   unfold right_son_check_list; unfold right_son_swap; unfold right_son;
   unfold get_list_val; unfold legal_list_state; simpl_Z.
+
+Ltac try_list_unfold_witout_Z :=
+  unfold left_son_check_list; unfold left_son_swap; unfold left_son; 
+  unfold right_son_check_list; unfold right_son_swap; unfold right_son;
+  unfold get_list_val; unfold legal_list_state; simpl.
 
 Example test : list_swap 2 1 [2; 3; 4; 5] [2; 4; 3; 5].
 Proof.

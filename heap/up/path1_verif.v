@@ -4,13 +4,11 @@ Require Import heap.program.
 Require Import heap.definitions.
 Require Import heap.annotation.
 Require heap.up.path1.
-Require Export SetsClass.SetsClass.
+Require Import SetsClass.SetsClass.
 
 Module SH_Proof <: STRAIGHTLINE_HOARE_TRIPLE_PROOF.
 
 Include heap.up.path1.
-
-(* Lemma array_after_swap:  *)
 
 Theorem proof: functional_correctness_statement.
 Proof.
@@ -65,154 +63,16 @@ Proof.
       - rep_lia.
   }
   {
-    entailer!.
-    pose proof split2_data_at_Tarray Tsh tint (Zlength Hl0) (pos1).
-    erewrite H18; [| lia | rewrite H17; lia | | |].
-    2: rewrite sublist_same; [tauto | tauto | rewrite H17; tauto].
-    2: rewrite !sublist_map; reflexivity.
-    2: rewrite !sublist_map; reflexivity.
-    change (Tarray tint (pos1) noattr) with (tarray tint (pos1)).
-    change (Tarray tint (Zlength Hl0 - pos1) noattr) with (tarray tint (Zlength Hl0 - pos1)).
-    pose proof SingletonHole.array_with_hole_intro Tsh tint (pos1 / 2) pos1 (map Vint (map Int.repr (sublist 0 pos1 Hl0))) a0 ltac:(lia).
-    rewrite !Znth_map in H19.
-    2: rewrite Zlength_sublist by lia; lia.
-    2: rewrite Zlength_map, Zlength_sublist by lia; lia.
-    rewrite !Znth_sublist in H19 by lia.
-    replace (pos1 / 2 + 0) with (pos1 / 2) in H19 by lia.
-    replace (store_int (field_address (tarray tint pos1) [ArraySubsc (pos1 / 2)] a0) (Znth (pos1 / 2) Hl0))
-      with (store_int (field_address (tarray tint (Zlength Hl0)) [ArraySubsc (pos1 / 2)] a0) (Znth (pos1 / 2) Hl0)) in H19.
-    2: {
-      rewrite <- offset_val_field_address; [ | lia | tauto].
-      eapply field_compatible_Tarray_split in H16.
-      + destruct H16.
-        rewrite <- offset_val_field_address; [tauto | lia | apply H16].
-      + lia.
-    }
-    sep_apply H19.
-    entailer!.
-    clear H18 H19 H20.
-    change (Tarray tint (Zlength Hl0) noattr) with (tarray tint (Zlength Hl0)).
-    pose proof SingletonHole.array_with_hole_intro Tsh tint 0 (Zlength Hl0 - pos1).
-    sep_apply H18; [lia |].
-    rewrite !Znth_map.
-    2: rewrite Zlength_sublist by lia; lia.
-    2: rewrite Zlength_map, Zlength_sublist by lia; lia.
-    rewrite !Znth_sublist by lia.
-    replace (0 + pos1) with (pos1) by lia.
-    replace (field_address (tarray tint (Zlength Hl0 - pos1)) [ArraySubsc 0] (field_address0 (tarray tint (Zlength Hl0)) [ArraySubsc pos1] a0))
-      with (field_address (tarray tint (Zlength Hl0)) [ArraySubsc pos1] a0).
-    2: {
-      rewrite field_address0_offset.
-      2: {
-        apply field_compatible0_cons.
-        simpl; split; [lia | tauto].
-      }
-      rewrite !field_address_offset.
-      3: {
-        apply field_compatible_cons.
-        simpl; split; [lia | tauto].
-      }
-      2: {
-        simpl.
-        apply field_compatible_cons.
-        simpl; split; [lia |].
-        rewrite field_address0_offset in H22.
-        + tauto.
-        + apply field_compatible0_cons.
-          simpl; split; [lia | tauto].  
-      }
-      simpl.
-      rewrite offset_offset_val.
-      f_equal; lia.
-    }
+    sep_apply (int_array_with_two_holes a0 Hl0 Maxsize (pos1 / 2) pos1);
+      [lia | lia | lia |].
     entailer!.
   }
   forward.
   Exists (list_swap Hl0 (pos1 / 2) pos1) (pos1 / 2) a0 (Vint (IntRepr (pos1 / 2))).
   entailer!.
   2: {
-    pose proof split2_data_at_Tarray Tsh tint (Zlength Hl0) (pos1).
-    erewrite H0; [ | lia | | | |].
-    3: {
-      rewrite sublist_same; [reflexivity | lia | rewrite !Zlength_map].
-      rewrite list_swap_len by lia.
-      reflexivity.
-    }
-    2: {
-      rewrite !Zlength_map.
-      rewrite list_swap_len by lia.
-      lia.
-    }
-    2: rewrite !sublist_map; reflexivity.
-    2: rewrite !sublist_map; reflexivity.
-    change (Tarray tint (pos1) noattr) with (tarray tint (pos1)).
-    change (Tarray tint (Zlength Hl0 - pos1) noattr) with (tarray tint (Zlength Hl0 - pos1)).
-    pose proof SingletonHole.array_with_hole_elim Tsh tint (pos1 / 2) pos1
-      (Vint(IntRepr((Znth pos1 Hl0)))) (map Vint (map IntRepr (sublist 0 pos1 Hl0))) a0.
-    rewrite !upd_Znth_map in H20.
-    replace (sublist 0 pos1 (list_swap Hl0 (pos1 / 2) pos1))
-      with (upd_Znth (pos1 / 2) (sublist 0 pos1 Hl0) (Znth pos1 Hl0)).
-    replace (field_address (tarray tint (Zlength Hl0)) [ArraySubsc (pos1 / 2)] a0)
-      with (field_address (tarray tint pos1) [ArraySubsc (pos1 / 2)] a0).
-    3: {
-      unfold list_swap.
-      rewrite sublist_upd_Znth_lr; [ | lia | rewrite upd_Znth_Zlength; lia].
-      rewrite sublist_upd_Znth_l by lia.
-      replace (pos1 / 2 - 0) with (pos1 / 2) by lia.
-      tauto.
-    }
-    2: {
-      rewrite <- !offset_val_field_address; [ tauto | lia | tauto | lia | ].
-      eapply field_compatible_Tarray_split in H15.
-      + destruct H15.
-        apply H15.
-      + lia.
-    }
-    sep_apply H20.
-    entailer!.
-    pose proof SingletonHole.array_with_hole_elim Tsh tint 0 (Zlength Hl0 - pos1)
-      (Vint(IntRepr((Znth (pos1/2) Hl0)))) (map Vint (map IntRepr (sublist pos1 (Zlength Hl0) Hl0)))
-      (field_address0 (Tarray tint (Zlength Hl0) noattr) [ArraySubsc pos1] a0).
-    rewrite !upd_Znth_map in H26.
-    replace (sublist pos1 (Zlength Hl0) (list_swap Hl0 (pos1 / 2) pos1))
-      with (upd_Znth 0 (sublist pos1 (Zlength Hl0) Hl0) (Znth (pos1 / 2) Hl0)).
-    replace (field_address (tarray tint (Zlength Hl0)) [ArraySubsc pos1] a0)
-      with (field_address (tarray tint (Zlength Hl0 - pos1)) [ArraySubsc 0] (field_address0 (Tarray tint (Zlength Hl0) noattr) [ArraySubsc pos1] a0)).
-    3: {
-      unfold list_swap.
-      rewrite sublist_upd_Znth_r; [ | lia | rewrite upd_Znth_Zlength; lia].
-      rewrite sublist_upd_Znth_lr by lia.
-      replace (pos1 - pos1) with 0 by lia.
-      tauto.
-    }
-    2: {
-      rewrite field_address0_offset.
-      2: {
-        apply field_compatible0_cons.
-        simpl; split; [lia | tauto].
-      }
-      rewrite !field_address_offset.
-      3: {
-        apply field_compatible_cons.
-        simpl; split; [lia |].
-        pose proof field_compatible_Tarray_split tint pos1 (Zlength Hl0) a0 ltac:(lia).
-        apply H27 in H15.
-        + destruct H15.
-          rewrite field_address0_offset in H28; simpl in H28.
-          - apply H28.
-          - apply field_compatible0_cons.
-            simpl; split; [lia | apply H27; tauto]. 
-      }
-      2: {
-        apply field_compatible_cons.
-        simpl; split; [lia | tauto].
-      }
-      simpl.
-      rewrite offset_offset_val.
-      f_equal; lia.
-    }
-    sep_apply H26.
-    entailer!.
+    sep_apply (int_array_with_two_holes_inv a0 Hl0 (pos1 / 2) pos1 (Znth pos1 Hl0) (Znth (pos1 / 2) Hl0));
+      [ lia | lia | entailer! ].
   }
   split.
   2: {
