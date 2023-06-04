@@ -1,1 +1,2 @@
--Q ../VST-A-tool/VST-A/csplit Csplit -Q ../VST-A-tool/VST-A/floyd-seq FloydSeq -R . cprogs  -Q ../VST-A-tool/VST-2.5/msl VST.msl  -Q ../VST-A-tool/VST-2.5/sepcomp VST.sepcomp  -Q ../VST-A-tool/VST-2.5/veric VST.veric  -Q ../VST-A-tool/VST-2.5/floyd VST.floyd -R ../VST-A-tool/VST-2.5/compcert compcert -Q ../VST-A-tool/VST-A/utils utils -Q ./SetsClass SetsClass
+-Q ../sets SetsClass 
+-Q ../VST-A-tool/VST-A/csplit Csplit -Q ../VST-A-tool/VST-A/floyd-seq FloydSeq -R . cprogs  -Q ../VST-A-tool/VST-2.5/msl VST.msl  -Q ../VST-A-tool/VST-2.5/sepcomp VST.sepcomp  -Q ../VST-A-tool/VST-2.5/veric VST.veric  -Q ../VST-A-tool/VST-2.5/floyd VST.floyd -R ../VST-A-tool/VST-2.5/compcert compcert -Q ../VST-A-tool/VST-A/utils utils

@@ -1,0 +1,10 @@
+.vscode
+.depend
+.lia.cache
+*.vo
+*.vos
+*.vok
+*.glob
+*.aux
+heap2
+heap.v

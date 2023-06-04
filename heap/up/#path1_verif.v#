@@ -1,0 +1,56 @@
+Require Import utils.VSTALib.
+
+Require Import heap.program.
+Require Import heap.definitions.
+Require Import heap.annotation.
+Require heap.up.path1.
+
+Module SH_Proof <: STRAIGHTLINE_HOARE_TRIPLE_PROOF.
+
+Include heap.up.path1.
+
+Theorem proof: functional_correctness_statement.
+Proof.
+  cbv delta [functional_correctness_statement].
+  intros.
+  Intros Hl0 pos1 a pos.
+  subst.
+  sep_apply list_length; [lia | ]; Intros.
+  forward.
+  forward.
+  assert (1 <= pos1 / 2 /\ pos1 / 2 <= pos1). {
+    split.
+    + pose proof Z.div_le_lower_bound pos1 2 1 ltac:(lia) ltac:(lia).
+      lia.
+    + pose proof Z.div_le_upper_bound pos1 2 pos1 ltac:(lia) ltac:(lia).
+      lia.
+  }
+  assert (Int.unsigned (Int.shr (IntRepr pos1) (IntRepr 1)) = pos1 / 2). {
+    unfold Int.shr.
+    rewrite Int.signed_repr by rep_lia.
+    pose proof Int.unsigned_repr 1 ltac:(rep_lia).
+    rewrite H12.
+    unfold Z.shiftr.
+    simpl.
+    rewrite Z.div2_div.
+    rewrite Int.unsigned_repr by rep_lia.
+    reflexivity.
+  }
+  forward.
+  rewrite H12.
+  forward.
+  Search Vint.
+  forward_call ((Znth (pos1 / 2) Hl0), (Znth pos1 Hl0), (Int.unsigned  _a) + (pos1 / 2), (Int.unsigned a0) + pos1).
+  (a0 + (Int.shr (IntRepr pos1) (IntRepr 1))), ((_a + _pos)%expr), ((_a + _pos)%expr), (a0 + (Int.shr (IntRepr pos1) (IntRepr 1)))). *)
+Admitted.
+
+Definition f_swap_spec_annotation :=
+  ANNOTATION_WITH y x py0 px0 a' b',
+  ((PROP ((b' = py0); (a' = px0))
+  LOCAL (temp _a a'; temp _b b')
+  SEP ((store_int px0 x); (store_int py0 y))),
+  (PROP ()
+  LOCAL ()
+  SEP ((store_int px0 y); (store_int py0 x)))).
+
+End SH_Proof.

@@ -10,6 +10,8 @@ Local Open Scope string.
 Local Open Scope nat_scope.
 Local Open Scope Z_scope.
 Local Open Scope list_scope.
+Require Import cprogs.heap.list_relation.
+Require Import cprogs.heap.definitions.
 
 Require Import SetsClass.SetsClass.
 Local Open Scope sets.
@@ -127,35 +129,35 @@ Definition heap_tree_up:
   tree_state -> tree_state -> Prop:=
   ⋃ (iter_n_tree_up).
 
-Definition left_son_check_tree (t: tree): Prop:=
-  exists v ls rs, t = (Node v ls rs) /\ ~(ls = Leaf) /\ (get_tree_val ls) > v.
+Definition left_son_check_tree (v: Z) (ls rs: tree): Prop:=
+  ~(ls = Leaf) /\ (get_tree_val ls) > v.
 
-Definition right_son_check_tree (t: tree): Prop:=
-  exists v ls rs, t = (Node v ls rs) /\ ~(rs = Leaf) /\ (get_tree_val rs) > v.
+Definition right_son_check_tree (v: Z) (ls rs: tree): Prop:=
+  ~(rs = Leaf) /\ (get_tree_val rs) > v.
 
-Definition swap_down_left (t1 t2: tree) (t: bool*Z*tree): Prop:=
-  exists v ls rs vl lls lrs, t1 = (Node v ls rs) /\ ls = (Node vl lls lrs) /\
+Definition swap_down_left (v: Z) (ls rs t2: tree) (t: bool*Z*tree): Prop:=
+  exists vl lls lrs, ls = (Node vl lls lrs) /\
   t2 = (Node v lls lrs) /\ t = (false, vl, rs).
 
-Definition swap_down_right (t1 t2: tree) (t: bool*Z*tree): Prop:=
-  exists v ls rs vr rls rrs, t1 = (Node v ls rs) /\ rs = (Node vr rls rrs) /\
+Definition swap_down_right (v: Z) (ls rs t2: tree) (t: bool*Z*tree): Prop:=
+  exists vr rls rrs, rs = (Node vr rls rrs) /\
   t2 = (Node v rls rrs) /\ t = (true, vr, ls).
 
 Definition tree_down_succeed:
   tree_state -> tree_state -> Prop:=
-    fun t1 t2 => exists t, (t::(fst t1)) = (fst t2) /\ (
-      ((left_son_check_tree (snd t1)) /\ ~(right_son_check_tree (snd t1)) /\ (swap_down_left (snd t1) (snd t2) t)) \/
-      (~(left_son_check_tree (snd t1)) /\ (right_son_check_tree (snd t1)) /\ (swap_down_right (snd t1) (snd t2) t)) \/
-      ((left_son_check_tree (snd t1)) /\ (right_son_check_tree (snd t1)) /\ (exists v ls rs, (snd t1) = (Node v ls rs) /\ (
-        ((get_tree_val rs) > (get_tree_val ls) /\ (swap_down_right (snd t1) (snd t2) t)) \/
-        ((get_tree_val rs) <= (get_tree_val ls) /\ (swap_down_left (snd t1) (snd t2) t)))
+    fun t1 t2 => exists t, (t::(fst t1)) = (fst t2) /\ (exists v ls rs, (snd t1) = (Node v ls rs) /\ (
+      ((left_son_check_tree v ls rs) /\ ~(right_son_check_tree v ls rs) /\ (swap_down_left v ls rs (snd t2) t)) \/
+      (~(left_son_check_tree v ls rs) /\ (right_son_check_tree v ls rs) /\ (swap_down_right v ls rs (snd t2) t)) \/
+      ((left_son_check_tree v ls rs) /\ (right_son_check_tree v ls rs) /\ (
+        ((get_tree_val rs) > (get_tree_val ls) /\ (swap_down_right v ls rs (snd t2) t)) \/
+        ((get_tree_val rs) <= (get_tree_val ls) /\ (swap_down_left v ls rs (snd t2) t)))
       ))
     ).
 
 Definition tree_down_fail:
   tree_state -> tree_state -> Prop:=
   Rels.test(
-    fun t => (legal_tree_state t) /\ ~(left_son_check_tree (snd t)) /\ ~(right_son_check_tree (snd t))
+    fun t => exists v ls rs, ((snd t) = Node v ls rs) /\ (legal_tree_state t) /\ ~(left_son_check_tree v ls rs) /\ ~(right_son_check_tree v ls rs)
   ).
 
 Fixpoint iter_n_tree_down (n: nat):
@@ -173,6 +175,120 @@ Ltac try_unfold_tree :=
   unfold swap_down_left; unfold left_son_check_tree; 
   unfold swap_down_right; unfold right_son_check_tree;
   unfold get_tree_val; unfold legal_tree_state; simpl.
+
+Fixpoint MaxHeap(t: tree): Prop :=
+  match t with 
+    | Leaf => True
+    | Node v ls rs => 
+      (ls = Leaf \/ (get_tree_val ls) <= v) /\
+      (rs = Leaf \/ (get_tree_val rs) <= v) /\ 
+      MaxHeap ls /\ MaxHeap rs
+  end.
+
+Fixpoint MaxHeap_partial_tree_v(lt: partial_tree) (vt: Z): Prop :=
+  match lt with
+    | nil => True
+    | (fl, v, t) :: lt0 => (MaxHeap t) /\ (t = Leaf \/ (get_tree_val t) <= v)
+                          /\ (v <= vt) /\ (MaxHeap_partial_tree_v lt0 v)
+  end.
+
+Definition MaxHeap_partial_tree(lt: partial_tree): Prop :=
+  match lt with
+    | nil => True
+    | (fl, v, t) :: lt0 => (MaxHeap t) /\ (t = Leaf \/ (get_tree_val t) <= v) /\ (MaxHeap_partial_tree_v lt0 v)
+  end.
+
+Fixpoint tree_compose (pt: partial_tree) (t: tree) :=
+  match pt with
+    | nil => t
+    | (true, v, son) :: pt0  => tree_compose pt0 (Node v son t)
+    | (false, v, son) :: pt0 => tree_compose pt0 (Node v t son)
+  end.
+
+Definition MaxHeap_no_rt(t: tree): Prop :=
+  exists v ls rs, t = (Node v ls rs) /\ MaxHeap ls /\ MaxHeap rs.
+
+Definition MaxHeap_tree_up(ts: tree_state): Prop :=
+  MaxHeap_partial_tree (fst ts) /\ MaxHeap (snd ts).
+
+Definition MaxHeap_tree_down(ts: tree_state): Prop :=
+  MaxHeap_partial_tree (fst ts) /\ MaxHeap_no_rt (snd ts) /\
+  (exists fl v ts0 lt, (fst ts) = (fl, v, ts0) :: lt -> v >= get_tree_val (snd ts)).
+
+Definition list_on_tree_state(l: list_state) (t: tree_state): Prop :=
+  True.
+
+Lemma Up_tree_list_succeed: forall (l l': list_state) (t: tree_state),
+  list_on_tree_state l t -> list_up_succeed l l' -> MaxHeap_tree_up t ->
+  exists t', tree_up_succeed t t' /\ list_on_tree_state l' t' /\ MaxHeap_tree_up t'.
+Proof.
+Admitted.
+
+Lemma Up_tree_list_fail: forall (l: list_state) (t: tree_state),
+  list_on_tree_state l t -> list_up_fail l l ->
+  tree_up_fail t t.
+Proof.
+Admitted.
+
+Lemma Up_fail_impl_MaxHeap: forall (t: tree_state),
+  tree_up_fail t t -> MaxHeap_tree_up t -> MaxHeap (tree_compose (fst t) (snd t)).
+Proof.
+Admitted.
+
+Lemma Up_tree_list_rel: forall (l l': list_state) (t: tree_state),
+  list_on_tree_state l t -> heap_list_up l l' -> MaxHeap_tree_up t ->
+  exists t', heap_tree_up t t' /\ list_on_tree_state l' t' /\ MaxHeap (tree_compose (fst t') (snd t')).
+Proof.
+Admitted.
+
+Lemma Down_tree_list_succeed: forall (l l': list_state) (t: tree_state),
+  list_on_tree_state l t -> list_down_succeed l l' -> MaxHeap_tree_down t ->
+  exists t', tree_down_succeed t t' /\ list_on_tree_state l' t' /\ MaxHeap_tree_down t'.
+Proof.
+Admitted.
+
+Lemma Down_tree_list_fail: forall (l: list_state) (t: tree_state),
+  list_on_tree_state l t -> list_down_fail l l ->
+  tree_down_fail t t.
+Proof.
+Admitted.
+
+Lemma Down_fail_impl_MaxHeap: forall (t: tree_state),
+  tree_down_fail t t -> MaxHeap_tree_down t -> MaxHeap (tree_compose (fst t) (snd t)).
+Proof.
+Admitted.
+
+Lemma Down_tree_list_rel: forall (l l': list_state) (t: tree_state),
+  list_on_tree_state l t -> heap_list_down l l' -> MaxHeap_tree_down t ->
+  exists t', heap_tree_down t t' /\ list_on_tree_state l' t' /\ MaxHeap (tree_compose (fst t') (snd t')).
+Proof.
+Admitted.
+
+Fixpoint tree_to_partical_tree (t: tree): partial_tree :=
+  match t with
+    | Leaf => nil
+    | Node v ls rs => (true, v, ls) :: (tree_to_partical_tree rs)
+  end.
+
+Definition tree_push: tree -> Z -> tree -> Prop :=
+  fun t val t' =>
+    exists (ts: tree_state), heap_tree_up ((tree_to_partical_tree t), Node val Leaf Leaf) ts /\ t' = (tree_compose (fst ts) (snd ts)).
+
+Lemma Push_tree_list_rel: forall (l l': list Z) (t: tree) (v: Z),
+  list_on_tree l t -> heap_push l v l' -> MaxHeap t ->
+  exists t', list_on_tree l' t' /\ MaxHeap t' /\ tree_push t v t'.
+Proof.
+Admitted.
+
+Definition tree_pop: tree -> tree -> Prop :=
+  fun t t' =>
+    exists (ts: tree_state), heap_tree_down (nil, t) ts /\ t' = (tree_compose (fst ts) (snd ts)).
+
+Lemma Pop_tree_list_rel: forall (l l': list Z) (t: tree),
+  list_on_tree l t -> heap_pop l l' -> MaxHeap t ->
+  exists t', list_on_tree l' t' /\ MaxHeap t' /\ tree_pop t t'.
+Proof.
+Admitted.
 
 Example list1: list Z:= [4;8;5].
 Example tree_state_end: tree_state:=
@@ -229,38 +345,26 @@ Proof.
   + unfold tree_down_succeed.
     exists (false,8,(Node 5 Leaf Leaf)).
     split; [tauto|].
-    right. right. 
-    try_unfold_tree.
-    split. 
-      exists 4, (Node 8 Leaf Leaf), (Node 5 Leaf Leaf).
-      split; [tauto|].
-      split; [discriminate|lia].
-    split.
-      exists 4, (Node 8 Leaf Leaf), (Node 5 Leaf Leaf).
-      split; [tauto|].
-      split; [discriminate|lia].
     exists 4, (Node 8 Leaf Leaf), (Node 5 Leaf Leaf).
-    split; [tauto|].
+    try_unfold_tree.
+    split; [reflexivity|].
+    right. right.
+    split; [split; [discriminate|lia] | ]. 
+    split; [split; [discriminate|lia] | ].
     right.
     split; [lia|].
-    exists 4, (Node 8 Leaf Leaf), (Node 5 Leaf Leaf), 8, Leaf, Leaf.
-    tauto.
+    exists 8, Leaf, Leaf.
+    split; [reflexivity|].
+    split; reflexivity.
   + unfold tree_down_fail.
     unfold_RELS_tac.
     try_unfold_tree.
     split; [|tauto].
-    split; [exists 4, Leaf, Leaf; tauto|].
-    split;
-    apply all_not_not_ex; intros;
-    apply all_not_not_ex; intros;
-    apply all_not_not_ex; intros;
-    apply Classical_Prop.or_not_and;
-    apply Classical_Prop.imply_to_or;
-    intros;
-    injection H;
-    intros; subst;
-    apply Classical_Prop.or_not_and;
-    left; tauto.
+    exists 4, Leaf, Leaf.
+    split; [reflexivity|].
+    split; [|tauto].
+    exists 4, Leaf, Leaf.
+    reflexivity.
 Qed.
 
 Example down_fail_val_err: tree_down_fail
@@ -271,17 +375,11 @@ Proof.
   unfold_RELS_tac; simpl.
   try_unfold_tree.
   split; [|tauto].
+  exists 9, (Node 8 Leaf Leaf), (Node 5 Leaf Leaf).
+  split; [reflexivity|].
   split.
-  + exists 9, (Node 8 Leaf Leaf), (Node 5 Leaf Leaf); tauto.
-  + split;
-    apply all_not_not_ex; intros;
-    apply all_not_not_ex; intros;
-    apply all_not_not_ex; intros;
-    apply Classical_Prop.or_not_and;
-    apply Classical_Prop.imply_to_or;
-    intros;
-    injection H;
-    intros; subst;
-    apply Classical_Prop.or_not_and;
+  + exists 9, (Node 8 Leaf Leaf), (Node 5 Leaf Leaf).
+    reflexivity.
+  + split; apply Classical_Prop.or_not_and;
     right; lia.
 Qed.
