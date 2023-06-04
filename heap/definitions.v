@@ -220,7 +220,7 @@ Proof.
     simpl fst; simpl snd.
     rewrite !Zlength_firstn.
     lia.
-  + assert (pos*2 > len2 - 1 \/ pos*2 <= len2 - 1) by lia.
+  + assert (2*pos > len2 - 1 \/ 2*pos <= len2 - 1) by lia.
     destruct H2.
     - left.
       unfold legal_list_state.
@@ -236,9 +236,9 @@ Proof.
       pose proof (Zfirstn_firstn l len2 len1 H).
       rewrite <- H3.
       assert (pos < len2) by lia.
-      assert (pos * 2 < len2) by lia.
+      assert (2 * pos < len2) by lia.
       pose proof (Znth_firstn (firstn (Z.to_nat len1) l) pos len2 H4).
-      pose proof (Znth_firstn (firstn (Z.to_nat len1) l) (pos*2) len2 H5).
+      pose proof (Znth_firstn (firstn (Z.to_nat len1) l) (2*pos) len2 H5).
       rewrite H6, H7.
       tauto.
 Qed.
@@ -259,7 +259,7 @@ Proof.
     simpl fst; simpl snd.
     rewrite !Zlength_firstn.
     lia.
-  + assert (pos*2+1 > len2 - 1 \/ pos*2+1 <= len2 - 1) by lia.
+  + assert (2*pos+1 > len2 - 1 \/ 2*pos+1 <= len2 - 1) by lia.
     destruct H2.
     - left.
       unfold legal_list_state.
@@ -274,9 +274,9 @@ Proof.
       pose proof (Zfirstn_firstn l len2 len1 H).
       rewrite <- H3.
       assert (pos < len2) by lia.
-      assert (pos*2+1 < len2) by lia.
+      assert (2*pos+1 < len2) by lia.
       pose proof (Znth_firstn (firstn (Z.to_nat len1) l) pos len2 H4).
-      pose proof (Znth_firstn (firstn (Z.to_nat len1) l) (pos*2+1) len2 H5).
+      pose proof (Znth_firstn (firstn (Z.to_nat len1) l) (2*pos+1) len2 H5).
       rewrite H6, H7.
       tauto.
 Qed.

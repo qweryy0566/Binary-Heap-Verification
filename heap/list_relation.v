@@ -79,16 +79,16 @@ Definition heap_list_up:
   (* ⋃ (iter_n_list_up). *)
 
 Definition left_son(l: list_state): list_state :=
-  pair (fst l) ((snd l) * 2).
+  pair (fst l) (2 * (snd l)).
 
 Definition left_son_swap(l1 l2: list_state): Prop :=
-  (list_swap (snd l1) (snd l2) (fst l1) (fst l2)) /\ (snd l1) * 2 = (snd l2).
+  (list_swap (snd l1) (snd l2) (fst l1) (fst l2)) /\ 2 * (snd l1) = (snd l2).
   
 Definition right_son_swap(l1 l2: list_state): Prop :=
-  (list_swap (snd l1) (snd l2) (fst l1) (fst l2)) /\ (snd l1) * 2 + 1 = (snd l2).
+  (list_swap (snd l1) (snd l2) (fst l1) (fst l2)) /\ 2 * (snd l1) + 1 = (snd l2).
 
 Definition right_son(l: list_state): list_state :=
-  pair (fst l) ((snd l) * 2 + 1).
+  pair (fst l) (2 * (snd l) + 1).
 
 Definition left_son_check_list (l: list_state): Prop :=
   legal_list_state (left_son l) /\

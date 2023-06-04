@@ -99,6 +99,17 @@ Proof.
   right; left.
   list_relation.try_list_unfold_witout_Z.
   repeat split.
-Admitted.
+  + rewrite Zlength_firstn; lia.
+  + lia.
+  + rewrite !Znth_firstn by lia; lia.
+  + rewrite Zlength_firstn; lia.
+  + lia.
+  + rewrite !Znth_firstn by lia; lia.
+  + right.
+    split.
+    - rewrite !Znth_firstn by lia; lia.
+    - split; [ | tauto].
+      apply list_swap_rela_correct_firstn; lia.
+Qed.
 
 End SH_Proof.
