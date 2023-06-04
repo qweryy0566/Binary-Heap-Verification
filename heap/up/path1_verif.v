@@ -91,7 +91,8 @@ Proof.
   + split.
     - split; [| lia].
       rewrite Zlength_firstn.
-      assert (Zlength (list_swap Hl0 (pos1 / 2) pos1) = Zlength Hl0) by (rewrite list_swap_len; lia).
+      assert (Zlength (list_swap Hl0 (pos1 / 2) pos1) = Zlength Hl0)
+        by (rewrite list_swap_Zlength; lia).
       lia.
     - split; [lia | ].
       split; [lia | ].

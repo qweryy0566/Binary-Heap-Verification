@@ -105,8 +105,7 @@ Proof.
   + rewrite Zlength_firstn; lia.
   + lia.
   + rewrite !Znth_firstn by lia; lia.
-  + right.
-    split.
+  + right; split.
     - rewrite !Znth_firstn by lia; lia.
     - split; [ | tauto].
       apply list_swap_rela_correct_firstn; lia.

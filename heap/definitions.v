@@ -309,20 +309,26 @@ Qed. *)
 (* Search sublist.
 Print sublist. *)
 
+Lemma upd_Znth_twice_Zlength: forall {A} (l: list A) p1 p2 v1 v2,
+  0 <= p1 < Zlength l -> 0 <= p2 < Zlength l ->
+  Zlength (upd_Znth p1 (upd_Znth p2 l v2) v1) = Zlength l.
+Proof.
+  intros.
+  rewrite upd_Znth_Zlength.
+  + rewrite upd_Znth_Zlength; lia.
+  + rewrite upd_Znth_Zlength; lia. 
+Qed.
+
 Definition list_swap (l: list Z) (i j: Z) : list Z :=
   upd_Znth i (upd_Znth j l (Znth i l)) (Znth j l).
 
-Lemma list_swap_len: forall l i j,
+Lemma list_swap_Zlength: forall l i j,
   0 <= i < Zlength l -> 0 <= j < Zlength l ->
   Zlength (list_swap l i j) = Zlength l.
 Proof.
   intros.
   unfold list_swap.
-  rewrite !upd_Znth_Zlength.
-  + reflexivity.
-  + lia.
-  + rewrite upd_Znth_Zlength by lia.
-    lia.
+  apply upd_Znth_twice_Zlength; lia.
 Qed.
 
 Lemma all_int_swap: forall l i j,
@@ -434,7 +440,7 @@ Lemma list_swap_eq: forall l i j,
 Proof.
   intros.
   eapply Znth_eq_ext.
-  + rewrite !list_swap_len by lia.
+  + rewrite !list_swap_Zlength by lia.
     reflexivity.
   + intros.
     unfold list_swap.
@@ -452,7 +458,7 @@ Proof.
         rewrite upd_Znth_Zlength; lia.
         lia.
       * rewrite upd_Znth_Zlength; lia.
-    - rewrite list_swap_len in H1 by lia.
+    - rewrite list_swap_Zlength in H1 by lia.
       rewrite upd_Znth_diff.
       assert (j = i0 \/ j <> i0) by lia. 
       destruct H3.
@@ -629,16 +635,6 @@ Proof.
   replace 0 with (p2 - p2) at 1 by lia.
   rewrite <- (field_address_array_relocate _ _ _ p2 p2); [| lia | lia | lia | tauto].
   entailer!.
-Qed.
-
-Lemma upd_Znth_twice_Zlength: forall {A} (l: list A) p1 p2 v1 v2,
-  0 <= p1 < Zlength l -> 0 <= p2 < Zlength l ->
-  Zlength (upd_Znth p1 (upd_Znth p2 l v2) v1) = Zlength l.
-Proof.
-  intros.
-  rewrite upd_Znth_Zlength.
-  + rewrite upd_Znth_Zlength; lia.
-  + rewrite upd_Znth_Zlength; lia. 
 Qed.
 
 Lemma int_array_with_two_holes_inv: forall a l p1 p2 v1 v2,
