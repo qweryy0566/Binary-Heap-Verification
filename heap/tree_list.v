@@ -205,6 +205,80 @@ Fixpoint tree_compose (pt: partial_tree) (t: tree) :=
     | (false, v, son) :: pt0 => tree_compose pt0 (Node v t son)
   end.
 
+Fixpoint tree_size (t: tree): Z :=
+  match t with
+    | Leaf => 0
+    | Node v ls rs => 1 + (tree_size ls) + (tree_size rs)
+  end.
+
+Fixpoint partial_tree_size (pt: partial_tree): Z :=
+  match pt with
+    | nil => 0
+    | (fl, v, t) :: pt0 => 1 + (tree_size t) + (partial_tree_size pt0)
+  end.
+
+Lemma tree_size_nonneg: forall t,
+  0 <= (tree_size t).
+Proof.
+  intros.
+  induction t; simpl; lia.  
+Qed.
+
+Lemma partial_tree_size_nonneg: forall pt,
+  0 <= (partial_tree_size pt).
+Proof.
+  intros.
+  induction pt; simpl.
+  + lia.
+  + destruct a.
+    destruct p.
+    destruct b; pose proof tree_size_nonneg t; lia. 
+Qed.
+
+Lemma tree_compose_size: forall pt t,
+  tree_size (tree_compose pt t) = (tree_size t) + (partial_tree_size pt).
+Proof.
+  (* intros ?. *)
+  induction pt.
+  + simpl; lia. 
+  + intros.
+    induction t.
+    - simpl. 
+      destruct a.
+      destruct p; destruct b.
+      * rewrite IHpt; simpl; lia.
+      * rewrite IHpt; simpl; lia.
+    - simpl.
+      destruct a.
+      destruct p; destruct b.
+      * rewrite IHpt.
+        simpl in IHt1, IHt2.
+        rewrite IHpt in IHt1, IHt2.
+        simpl; lia.
+      * rewrite IHpt.
+        simpl in IHt1, IHt2.
+        rewrite IHpt in IHt1, IHt2.
+        simpl; lia.
+Qed.
+
+Lemma tree_compose_emp: forall pt t,
+  tree_compose pt t = t -> pt = nil.
+Proof.
+  intros.
+  destruct pt.
+  + reflexivity.
+  + pose proof tree_compose_size (p :: pt) t.
+    assert (tree_size t = tree_size (tree_compose (p :: pt) t)). {
+      rewrite H; reflexivity.
+    }
+    rewrite <- H1 in H0.
+    unfold partial_tree_size in H0; fold partial_tree_size in H0.
+    destruct p; destruct p.
+    pose proof tree_size_nonneg t0.
+    pose proof partial_tree_size_nonneg pt.
+    lia.
+Qed.
+
 Definition MaxHeap_no_rt(t: tree): Prop :=
   exists v ls rs, t = (Node v ls rs) /\ MaxHeap ls /\ MaxHeap rs.
 
