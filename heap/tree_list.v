@@ -257,7 +257,9 @@ Definition MaxHeap_no_rt(t: tree): Prop :=
   exists v ls rs, t = (Node v ls rs) /\ MaxHeap ls /\ MaxHeap rs.
 
 Definition MaxHeap_tree_up(ts: tree_state): Prop :=
-  MaxHeap_partial_tree (fst ts) /\ MaxHeap (snd ts).
+  MaxHeap_partial_tree (fst ts) /\ MaxHeap (snd ts) /\ (exists v ls rs, snd ts = Node v ls rs /\ 
+  (ls = Leaf \/ MaxHeap_partial_tree_v (fst ts) (get_tree_val ls)) /\ 
+  (rs = Leaf \/ MaxHeap_partial_tree_v (fst ts) (get_tree_val rs))).
 
 Definition MaxHeap_tree_down(ts: tree_state): Prop :=
   MaxHeap_partial_tree (fst ts) /\ MaxHeap_no_rt (snd ts) /\
@@ -583,6 +585,7 @@ Proof.
     }
     destruct t.
     - pose proof MaxHeap_partial_tree_v_impl _ _ H3.
+      destruct H1.
       apply (tree_compose_MaxHeap ((flg, val, t2) :: lt) Leaf H1 ltac:(tauto)).
     - assert (MaxHeap_partial_tree_v ((flg, val, t2) :: lt) v). {
         unfold MaxHeap_partial_tree_v; fold MaxHeap_partial_tree_v.
@@ -590,6 +593,7 @@ Proof.
         assert (v <= val) by lia.
         tauto.
       }
+      destruct H1.
       apply (tree_compose_MaxHeap ((flg, val, t2) :: lt) (Node v t1 t3) H1 ltac:(tauto)).
 Qed.
 
