@@ -472,6 +472,50 @@ Proof.
       * lia.     
 Qed.
 
+Lemma list_swap_rela_rewrite: forall l l' i j,
+  0 <= i < Zlength l -> 0 <= j < Zlength l ->
+  list_relation.list_swap i j l l' ->
+  l' = list_swap l i j.
+Proof.
+  intros.
+  unfold list_relation.list_swap in H1.
+  destruct H1 as [? [? [? ?] ] ].    
+  apply Znth_eq_ext.
+  + rewrite list_swap_Zlength by lia.
+    rewrite H1.
+    reflexivity.
+  + intros.
+    assert (i0 = i \/ i0 = j \/ (i0 <> i /\ i0 <> j)) by lia.
+    destruct H6; try destruct H6.
+    - subst.
+      unfold list_swap.
+      rewrite upd_Znth_same.
+      * rewrite H3; reflexivity.
+      * rewrite upd_Znth_Zlength; lia.
+    - subst.
+      unfold list_swap.
+      assert (i = j \/ i <> j) by lia.
+      destruct H6.
+      * subst.
+        rewrite upd_Znth_same.
+        ++ rewrite H2; reflexivity.
+        ++ rewrite upd_Znth_Zlength; lia.
+      * rewrite upd_Znth_diff.
+        ++ rewrite upd_Znth_same by lia.
+           rewrite H2; reflexivity.
+        ++ rewrite upd_Znth_Zlength; lia.
+        ++ rewrite upd_Znth_Zlength; lia.
+        ++ lia.
+    - specialize (H4 i0 ltac:(lia)).
+      unfold list_swap.
+      rewrite upd_Znth_diff.
+      * rewrite upd_Znth_diff by lia.
+        rewrite H4; reflexivity.
+      * rewrite upd_Znth_Zlength; lia.
+      * rewrite upd_Znth_Zlength; lia.
+      * lia.   
+Qed.
+
 Lemma Zlor_add_one: forall x,
   x >= 0 -> Z.lor (2 * x) 1 = 2 * x + 1.
 Proof.
