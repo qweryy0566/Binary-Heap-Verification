@@ -196,12 +196,99 @@ Proof.
   tauto.
 Qed.
 
+Lemma MaxHeap_partial_tree_v_change_v: forall (lt: partial_tree) (v1 v2: Z),
+  MaxHeap_partial_tree_v lt v1 -> v2 <= v1 -> MaxHeap_partial_tree_v lt v2.
+Proof.
+  intros.
+  destruct lt; [tauto|].
+  destruct p as [[flg val] t].
+  simpl in H; simpl.
+  split; [tauto|].
+  split; [tauto|].
+  split; [lia|].
+  tauto.
+Qed.
+
 Fixpoint tree_compose (pt: partial_tree) (t: tree) :=
   match pt with
     | nil => t
     | (true, v, son) :: pt0  => tree_compose pt0 (Node v son t)
     | (false, v, son) :: pt0 => tree_compose pt0 (Node v t son)
   end.
+
+Fixpoint tree_size (t: tree): Z :=
+  match t with
+    | Leaf => 0
+    | Node v ls rs => 1 + (tree_size ls) + (tree_size rs)
+  end.
+
+Fixpoint partial_tree_size (pt: partial_tree): Z :=
+  match pt with
+    | nil => 0
+    | (fl, v, t) :: pt0 => 1 + (tree_size t) + (partial_tree_size pt0)
+  end.
+
+Lemma tree_size_nonneg: forall t,
+  0 <= (tree_size t).
+Proof.
+  intros.
+  induction t; simpl; lia.  
+Qed.
+
+Lemma partial_tree_size_nonneg: forall pt,
+  0 <= (partial_tree_size pt).
+Proof.
+  intros.
+  induction pt; simpl.
+  + lia.
+  + destruct a.
+    destruct p.
+    destruct b; pose proof tree_size_nonneg t; lia. 
+Qed.
+
+Lemma tree_compose_size: forall pt t,
+  tree_size (tree_compose pt t) = (tree_size t) + (partial_tree_size pt).
+Proof.
+  (* intros ?. *)
+  induction pt.
+  + simpl; lia. 
+  + intros.
+    induction t.
+    - simpl. 
+      destruct a.
+      destruct p; destruct b.
+      * rewrite IHpt; simpl; lia.
+      * rewrite IHpt; simpl; lia.
+    - simpl.
+      destruct a.
+      destruct p; destruct b.
+      * rewrite IHpt.
+        simpl in IHt1, IHt2.
+        rewrite IHpt in IHt1, IHt2.
+        simpl; lia.
+      * rewrite IHpt.
+        simpl in IHt1, IHt2.
+        rewrite IHpt in IHt1, IHt2.
+        simpl; lia.
+Qed.
+
+Lemma tree_compose_emp: forall pt t,
+  tree_compose pt t = t -> pt = nil.
+Proof.
+  intros.
+  destruct pt.
+  + reflexivity.
+  + pose proof tree_compose_size (p :: pt) t.
+    assert (tree_size t = tree_size (tree_compose (p :: pt) t)). {
+      rewrite H; reflexivity.
+    }
+    rewrite <- H1 in H0.
+    unfold partial_tree_size in H0; fold partial_tree_size in H0.
+    destruct p; destruct p.
+    pose proof tree_size_nonneg t0.
+    pose proof partial_tree_size_nonneg pt.
+    lia.
+Qed.
 
 Lemma tree_compose_MaxHeap2: forall (lt: partial_tree) (t: tree), 
   MaxHeap t -> MaxHeap_partial_tree lt -> (t = Leaf \/ MaxHeap_partial_tree_v lt (get_tree_val t)) -> MaxHeap (tree_compose lt t).
@@ -488,18 +575,32 @@ Proof.
         unfold MaxHeap_partial_tree in H1.
         destruct H1, H13.
         split; [apply (MaxHeap_partial_tree_v_impl _ _ H14)|].
-        split; [destruct H13; [left; tauto|right; simpl; lia]|].
-        split; [right; lia|].
-        split; [tauto|].
-        rewrite H10 in H12.
-        simpl in H12.
-        destruct H12, H15, H16.
-        split.
         destruct H12.
-        tauto.
-        right.
-        (* lia.
-        [destruct H12; [left; tauto| right; lia]|]. *)
+        destruct H15 as [v3 [ls2 [rs2]]].
+        rewrite H10 in H12; simpl in H12.
+        destruct H15.
+        rewrite H10 in H15.
+        injection H15; intros; subst.
+        split. destruct H13.
+        ++ split; [left; tauto|].
+           split; [right; lia|].
+           split; [tauto|].
+           destruct H16.
+           split. destruct H9; [tauto|rewrite <- H7 in H9; simpl in H9; right; tauto].
+           split. destruct H13; [tauto|rewrite <- H7 in H13; simpl in H13; right; tauto].
+           tauto.
+        ++ split;[right; lia|].
+           split; [right; lia|].
+           split; [tauto|].
+           destruct H16.
+           split. destruct H9; [tauto|rewrite <- H7 in H9; simpl in H9; right; tauto].
+           split. destruct H13; [tauto|rewrite <- H7 in H13; simpl in H13; right; tauto].
+           tauto.
+        ++ exists (get_list_val l), tr, (Node (Znth (snd l / 2) (fst l)) ls2 rs2); simpl.
+           split; [reflexivity|].
+           split; [|right; tauto].
+           destruct H13; [left; tauto|right].
+           apply (MaxHeap_partial_tree_v_change_v _ _ _ H14 H8).
 Admitted.
 
 Lemma Up_tree_list_succeed_clos_refl_trans: forall (l l': list_state) (t: tree_state),
@@ -637,6 +738,12 @@ Lemma Down_tree_list_succeed: forall (l l': list_state) (t: tree_state),
 Proof.
 Admitted.
 
+(* Lemma Down_tree_list_succeed_clos_refl_trans: forall (l l': list_state) (t: tree_state),
+  list_on_tree_state l t -> (clos_refl_trans list_down_succeed) l l' -> MaxHeap_tree_up t ->
+  exists t', (clos_refl_trans tree_up_succeed) t t' /\ list_on_tree_state l' t' /\ MaxHeap_tree_up t'.
+Proof.
+Admitted. *)
+
 Lemma Down_tree_list_fail: forall (l: list_state) (t: tree_state),
   list_on_tree_state l t -> list_down_fail l l ->
   tree_down_fail t t.
@@ -654,15 +761,76 @@ Lemma Down_tree_list_rel: forall (l l': list_state) (t: tree_state),
 Proof.
 Admitted.
 
+Fixpoint get_snd_01_pos(n: positive): bool:=
+  match n with
+  | 1%positive => true
+  | 2%positive => false
+  | (x~1)%positive | (x~0)%positive => (get_snd_01_pos x)
+  end.
+
+Definition get_snd_01(n: Z): bool:=
+  match n with
+    | 0 => true
+    | Z.pos p => (get_snd_01_pos p)
+    | Z.neg _ => false
+  end.
+
 Fixpoint tree_to_partial_tree (t: tree): partial_tree :=
   match t with
     | Leaf => nil
-    | Node v ls rs => (tree_to_partial_tree rs) ++ [(true, v, ls)]
+    | Node v ls rs => 
+      match get_snd_01(tree_size t) with
+      | true => (tree_to_partial_tree rs) ++ [(true, v, ls)]
+      | false => (tree_to_partial_tree ls) ++ [(false, v, rs)]
+      end (*true go right and right is cut*)
   end.
 
-Lemma partial_tree_MaxHeap_app: forall (rt tmp: tree) (v: Z) (flg: bool),
-  MaxHeap_partial_tree (tree_to_partial_tree rt) -> (rt = Leaf \/ v >= get_tree_val rt) -> MaxHeap_partial_tree ((tree_to_partial_tree rt) ++ [(flg,v,tmp)]).
+Lemma tree_to_partial_tree_rt_max: forall (rt tmp: tree) (lt: partial_tree) (v: Z) (flg: bool),
+  (flg,v,tmp)::lt = tree_to_partial_tree rt -> v <= get_tree_val rt.
 Proof.
+  intros.
+  revert v flg tmp lt H.
+  induction rt; intros.
+  + simpl in H.
+    discriminate.
+  + simpl.
+    simpl in H.
+(* Qed. *)
+Admitted.
+
+Lemma partial_tree_MaxHeap_app: forall (rt tmp: tree) (v: Z) (flg: bool),
+  MaxHeap_partial_tree (tree_to_partial_tree rt) -> (rt = Leaf \/ v >= get_tree_val rt) -> MaxHeap tmp -> (tmp = Leaf \/ get_tree_val tmp <= v) -> MaxHeap_partial_tree ((tree_to_partial_tree rt) ++ [(flg,v,tmp)]).
+Proof.
+  intros.
+  revert v tmp H1 H2 H H0.
+  remember (tree_to_partial_tree rt) as Hq.
+  induction Hq; intros.
+  + give_up.
+  + subst.
+    rewrite <- app_comm_cons.
+    destruct a as [[flg2 val] tr ].
+    unfold MaxHeap_partial_tree.
+    simpl in H.
+    split; [tauto|].  
+    split; [tauto|].
+    destruct H, H3.
+    pose proof MaxHeap_partial_tree_v_impl _ _ H4.
+    (* specialize IHp.
+    pose proof tree_to_partial_tree_rt_max _ _ _ _ _ HeqHq.
+    destruct Hq.
+    - destruct H0; [rewrite H0 in HeqHq; simpl in HeqHq; discriminate|].
+      simpl.
+      simpl in H.
+      split; [tauto|].
+      split; [tauto|].
+      split; [lia|tauto].
+    -
+      tauto.
+    assert (MaxHeap_partial_tree p). {
+      unfold MaxHeap_partial_tree.
+      (* destruct p *)
+    }
+    unfold s *)
 Admitted.
 
 Lemma list_on_tree_state_app: forall (l: list Z) (t: tree) (v: Z),
@@ -677,36 +845,44 @@ Definition tree_push: tree -> Z -> tree -> Prop :=
 Lemma MaxHeap_impl_MaxHeap_tree_up: forall (t: tree) (v: Z),
   MaxHeap t -> MaxHeap_tree_up (tree_to_partial_tree t,Node v Leaf Leaf).
 Proof.
-Admitted.
-  (* intros.
-  induction t.
+  intros.
+  revert H.
+  induction t; intros.
   + unfold tree_to_partial_tree.
     unfold MaxHeap_tree_up.
     simpl.
+    split; [tauto|].
+    split; [tauto|].
+    exists v, Leaf, Leaf.
     tauto.
   + unfold MaxHeap_tree_up.
-    simpl.
-    split; [|tauto].
+    unfold fst, snd.
     unfold MaxHeap in H; fold MaxHeap in H.
     destruct H, H0, H1.
-    (* split; [tauto|].
-    split; [tauto|]. *)
+    specialize (IHt1 H1).
     specialize (IHt2 H2).
-    unfold MaxHeap_tree_up in IHt2.
-    simpl in IHt2.
-    destruct IHt2.
-    clear H4.
-    destruct t2.
-    - simpl; tauto.
-    - destruct H0; [discriminate|].
-      simpl in H0.
-      revert H3.
-      unfold tree_to_partial_tree; fold tree_to_partial_tree.
-      unfold MaxHeap_partial_tree; fold MaxHeap_partial_tree.
-      intros.
-      unfold MaxHeap_partial_tree_v; fold MaxHeap_partial_tree_v.
+    unfold MaxHeap.
+    split.
+    unfold tree_to_partial_tree; fold tree_to_partial_tree.
+    destruct (get_snd_01 (tree_size (Node v0 t1 t2))).
+    - unfold MaxHeap_tree_up in IHt2.
+      destruct IHt2.
+      unfold fst in H3.
+      assert (t2 = Leaf \/ v0 >= get_tree_val t2). {
+        destruct H0; [left;tauto|right;lia].
+      }
+      apply (partial_tree_MaxHeap_app t2 t1 v0 true H3 H5); tauto.
+    - unfold MaxHeap_tree_up in IHt1.
+      destruct IHt1.
+      unfold fst in H3.
+      assert (t1 = Leaf \/ v0 >= get_tree_val t1). {
+        destruct H; [left;tauto|right;lia].
+      }
+      apply (partial_tree_MaxHeap_app t1 t2 v0 false H3 H5); tauto.
+    - split; [tauto|].
+      exists v, Leaf, Leaf.
       tauto.
-Qed. *)
+Qed.
 
 Lemma Push_tree_list_rel: forall (l l': list Z) (t: tree) (v: Z),
   list_on_tree l t -> heap_push l v l' -> MaxHeap t ->
