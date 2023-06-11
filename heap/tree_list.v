@@ -279,7 +279,6 @@ Definition MaxHeap_tree_down(ts: tree_state): Prop :=
   (exists fl v ts0 lt, (fst ts) = (fl, v, ts0) :: lt -> v >= get_tree_val (snd ts)).
 
 
-(* p 为洞的位置 *)
 (* Fixpoint list_on_partial_tree (l: list Z) (p: Z) (lt: partial_tree): Prop :=
   match lt with
     | nil => p = 1
@@ -287,11 +286,12 @@ Definition MaxHeap_tree_down(ts: tree_state): Prop :=
     | (false, v, tr) :: lt0 => Znth (p / 2) l = v /\ list_nth_on_tree l (p + 1) tr /\ list_on_partial_tree l (p / 2) lt0 /\ p > 1 /\ p = (p / 2) * 2
   end. *)
 
+(* p 为洞的位置且洞在 Zlength l 内 *)
 Inductive list_on_partial_tree (l: list Z) (p: Z) (lt: partial_tree) : Prop :=
   | nil_partial_tree: p = 1 -> lt = nil -> list_on_partial_tree l p lt
   | cons_partial_tree: forall flg v t lt0, 
     lt = (flg, v, t) :: lt0 ->
-    p > 1 -> 
+    1 < p < Zlength l -> 
     p = (p / 2) * 2 + (if flg then 1 else 0) ->
     Znth (p / 2) l = v -> 
     list_nth_on_tree l (p + (if flg then -1 else 1)) t -> 
@@ -446,6 +446,7 @@ Proof.
   + remember H1 as H1'; clear HeqH1'.
     destruct H1 as [? [n ?] ].
     destruct flg; eapply cons_partial_tree; eauto.
+    - rewrite upd_Znth_Zlength by lia; lia. 
     - rewrite upd_Znth_diff by lia; auto.
     - simpl.
       apply list_nth_on_tree_upd; [auto | lia |].
@@ -454,6 +455,7 @@ Proof.
     - pose proof is_child_index_gp p ch ltac:(lia) H1'.
       specialize (IHlist_on_partial_tree ltac:(lia) H9).
       auto.
+    - rewrite upd_Znth_Zlength by lia; lia.
     - rewrite upd_Znth_diff by lia; auto.
     - simpl.
       apply list_nth_on_tree_upd; [auto | lia |].
@@ -489,26 +491,6 @@ Proof.
     - specialize (IHlist_nth_on_tree1 _ H8).
       specialize (IHlist_nth_on_tree2 _ H9).
       subst; auto. 
-  (* revert n t2 H H0.
-  induction t1; intros.
-  + 
-    destruct t2; [reflexivity|].
-    unfold list_nth_on_tree in H0.
-    destruct H0.
-    lia.
-  + unfold list_nth_on_tree in H; fold list_nth_on_tree in H.
-    destruct H, H1, H2. 
-    destruct t2.
-    - unfold list_nth_on_tree in H0.
-      lia.
-    - unfold list_nth_on_tree in H0; fold list_nth_on_tree in H0.
-      destruct H0, H4, H5.
-      specialize (IHt1_1 (n*2) t2_1 H2 H5).
-      specialize (IHt1_2 (n*2+1) t2_2 H3 H6).
-      replace v with v0 by lia.
-      rewrite IHt1_1.  
-      rewrite IHt1_2.
-      reflexivity. *)
 Qed.
 
 Lemma list_on_tree_inj: forall (l: list Z) (t1 t2: tree),
@@ -584,6 +566,7 @@ Proof.
     - pose proof Z.div_lt_upper_bound (n / 2) 2 (n / 2) ltac:(lia) ltac:(lia).
       pose proof Z.div_le_lower_bound (n / 2) 2 1 ltac:(lia) ltac:(lia).
       eapply cons_partial_tree; eauto.
+      * rewrite list_swap_Zlength by lia; lia. 
       * unfold list_swap.
         rewrite upd_Znth_diff.
         -- rewrite upd_Znth_diff by lia; reflexivity.
@@ -619,39 +602,24 @@ Proof.
   intros.
   unfold list_on_tree_state in H.
   destruct t as [lt t].
-  simpl in H.
-  destruct lt; [simpl; tauto|].
-  destruct p as [ [flg v] tr ].
-  destruct flg.
-  + simpl in H.
-    destruct H, H1.
-    destruct lt;
-    unfold list_on_tree_state_fix in H1;
-    destruct H1; rewrite H0 in H1;
-    replace (1/2) with 0 in H1 by tauto;
-    lia.
-  + simpl in H.
-    destruct H, H1.
-    destruct lt;
-    unfold list_on_tree_state_fix in H1;
-    destruct H1; rewrite H0 in H1;
-    replace (1/2) with 0 in H1 by tauto;
-    lia.
+  simpl in H; simpl.
+  unfold list_on_tree_state_fix in H.
+  destruct H.
+  inversion H1; [auto | lia].
 Qed.
 
 Lemma legal_list_impl_legal_tree_state: forall (l: list_state) (t: tree_state),
  list_on_tree_state l t -> legal_list_state l -> legal_tree_state t.
 Proof.
+  unfold list_on_tree_state.
   intros.
   destruct t as [lt t].
+  simpl in H. 
   destruct t.
-  + unfold list_on_tree_state in H.
-    simpl in H.
-    destruct lt;
-    simpl in H;
-    destruct H;
-    unfold legal_list_state in H0;
-    lia.
+  + unfold list_on_tree_state_fix in H.
+    destruct H.
+    unfold legal_list_state in H0.
+    inversion H; [lia | discriminate].
   + unfold legal_tree_state.
     exists v, t1, t2.
     tauto.
@@ -664,26 +632,21 @@ Proof.
   intros.
   pose proof legal_list_impl_legal_tree_state _ _ H H0.
   unfold list_on_tree_state in H.
+  unfold list_on_tree_state_fix in H.
   destruct t as [lt t].
-  destruct lt.
-  + simpl in H; destruct H.
-    lia.
-  + destruct p as [[flg val] tr].
-    exists lt, val, tr, flg.
-    simpl.
-    split; [reflexivity|].
-    unfold legal_tree_state in H2.
-    destruct H2 as [v [ls [rs]]].
-    simpl in H2; subst.
-    simpl in H.
-    destruct H, H, H3, H4.
-    split; [simpl; unfold get_list_val; lia|].
-    unfold get_list_val; simpl.
-    destruct flg.
-    - destruct H2.
-      destruct lt; simpl in H2; lia.
-    - destruct H2.
-      destruct lt; simpl in H2; lia.
+  simpl; simpl in H.
+  destruct H.
+  inversion H3; [lia | ].
+  exists lt0, v, t0, flg.
+  split; [auto | ].
+  unfold legal_tree_state in H2.
+  destruct H2 as [v' [ls [rs]]].
+  simpl in H2; subst.
+  inversion H; [discriminate | ].
+  inversion H2; subst.
+  split; simpl.
+  + unfold get_list_val; auto.
+  + unfold get_list_val; simpl; auto.
 Qed.
 
 Lemma list_on_tree_state_impl_tree_compose: forall (l: list_state) (t: tree_state),
@@ -691,60 +654,49 @@ Lemma list_on_tree_state_impl_tree_compose: forall (l: list_state) (t: tree_stat
 Proof.
   intros.
   destruct t as [lt t].
-  simpl.
-  revert t l H.
-  induction lt; intros.
-  + unfold list_on_tree_state in H.
-    simpl in H.
-    destruct H.
-    simpl.
+  destruct l as [l n].
+  unfold list_on_tree_state, list_on_tree_state_fix in H.
+  revert H; revert l n t.
+  induction lt; simpl; intros; destruct H.
+  + inversion H0; [| discriminate].
     unfold list_on_tree.
-    rewrite <- H0.
+    rewrite <- H1.
     tauto.
-  + destruct a as [[flg v] tr ].
+  + simpl in IHlt.
+    inversion H0; [discriminate | ].
+    apply cons_inv in H1; destruct H1.
+    rewrite H1; subst.
     destruct flg.
-    - simpl.
-      unfold list_on_tree_state in H; simpl in H.
-      specialize (IHlt (Node v tr t) (fst l,snd l / 2)).
-      simpl in IHlt; apply IHlt.
-      unfold list_on_tree_state; simpl.
-      tauto.
-    - simpl.
-      unfold list_on_tree_state in H; simpl in H.
-      specialize (IHlt (Node v t tr) (fst l,snd l / 2)).
-      simpl in IHlt; apply IHlt.
-      unfold list_on_tree_state; simpl.
-      tauto.
+    - specialize (IHlt l  (n / 2) (Node (Znth (n / 2) l) t0 t)).
+      apply IHlt.
+      split; [ | auto].
+      eapply list_nth_on_tree_Node; eauto; [lia | | ].
+      * replace (n / 2 * 2) with (n + -1) by lia; auto.
+      * replace (n / 2 * 2 + 1) with n by lia; auto.
+    - specialize (IHlt l  (n / 2) (Node (Znth (n / 2) l) t t0)).
+      apply IHlt.
+      split; [ | auto].
+      eapply list_nth_on_tree_Node; eauto; [lia | | ].
+      * replace (n / 2 * 2) with n by lia; auto.
+      * replace (n / 2 * 2 + 1) with (n + 1) by lia; auto.
 Qed.
 
 Lemma list_nth_on_tree_replace: forall (l l': list Z) (t: tree) (n: Z),
-  Zlength l = Zlength l' -> n >= 0-> (forall i, i >= n -> Znth i l = Znth i l') -> list_nth_on_tree l n t -> list_nth_on_tree l' n t.
+  Zlength l = Zlength l' -> n >= 0 -> (forall i, i >= n -> Znth i l = Znth i l') -> list_nth_on_tree l n t -> list_nth_on_tree l' n t.
 Proof.
   intros.
-  revert n l l' H H0 H1 H2.
-  induction t; intros.
-  + simpl in H1; simpl.
-    rewrite <- H.
-    apply H2.
-  + simpl in H2; simpl.
-    destruct H2, H3.
-    split; [rewrite <- H; tauto|].
-    pose proof (H1 n ltac:(lia)).
-    split; [rewrite <- H5; tauto|].
-    assert (forall i : Z, i >= (n*2) -> Znth i l = Znth i l'). {
-      intros.
-      assert (i >= n) by lia.
-      apply (H1 i H7).
-    }
-    assert (forall i : Z, i >= (n*2+1) -> Znth i l = Znth i l'). {
-      intros.
-      assert (i >= n) by lia.
-      apply (H1 i H8).
-    }
-    destruct H4.
-    split.
-    - apply (IHt1 (n*2) _ _ H ltac:(lia)); tauto.
-    - apply (IHt2 (n*2+1) _ _ H ltac:(lia)); tauto.
+  revert H1 H; revert l'.
+  induction H2; subst; simpl; intros.
+  + apply list_nth_on_tree_Leaf; auto; lia.
+  + eapply list_nth_on_tree_Node; eauto.
+    - lia.
+    - specialize (H2 n ltac:(lia)); auto.
+    - specialize (IHlist_nth_on_tree1 ltac:(lia) l').
+      apply IHlist_nth_on_tree1; [ intros | auto].
+      specialize (H2 i ltac:(lia)); auto.
+    - specialize (IHlist_nth_on_tree2 ltac:(lia) l').
+      apply IHlist_nth_on_tree2; [ intros | auto].
+      specialize (H2 i ltac:(lia)); auto. 
 Qed.
 
 Lemma Up_tree_list_succeed: forall (l l': list_state) (t: tree_state),
@@ -785,7 +737,8 @@ Proof.
         unfold MaxHeap_partial_tree in H1.
         destruct H1, H13.
         split; [apply (MaxHeap_partial_tree_v_impl _ _ H14)|].
-        split; [destruct H13; [left; tauto|right; simpl; lia]|].
+        give_up.
+        (* split; [destruct H13; [left; tauto|right; simpl; lia]|].
         split; [right; lia|].
         split; [tauto|].
         rewrite H10 in H12.
@@ -794,7 +747,7 @@ Proof.
         split.
         destruct H12.
         tauto.
-        right.
+        right. *)
         (* lia.
         [destruct H12; [left; tauto| right; lia]|]. *)
 Admitted.
