@@ -21,13 +21,21 @@ Inductive tree: Type :=
   | Leaf: tree
   | Node (v: Z) (ls: tree) (rs: tree): tree.
 
-Fixpoint list_nth_on_tree (l: list Z) (n: Z) (tr: tree): Prop :=
+(* Fixpoint list_nth_on_tree (l: list Z) (n: Z) (tr: tree): Prop :=
   match tr with
     | Leaf => Zlength l <= n
     | Node v ls rs =>
-        n < Zlength l /\ Znth n l = v /\
+        0 <= n < Zlength l /\ Znth n l = v /\
         list_nth_on_tree l (n * 2) ls /\ list_nth_on_tree l (n * 2 + 1) rs
-  end.
+  end. *)
+
+Inductive list_nth_on_tree (l: list Z) (n: Z) (tr: tree): Prop :=
+  | list_nth_on_tree_Leaf: Zlength l <= n -> tr = Leaf -> list_nth_on_tree l n tr
+  | list_nth_on_tree_Node: forall v ls rs,
+      tr = Node v ls rs ->
+      0 <= n < Zlength l -> Znth n l = v ->
+      list_nth_on_tree l (n * 2) ls -> list_nth_on_tree l (n * 2 + 1) rs ->
+      list_nth_on_tree l n tr.
 
 Example tree4: tree := Node 4 Leaf Leaf.
 Example tree5: tree := Node 5 Leaf Leaf.
@@ -40,38 +48,43 @@ Definition list_example: list Z := [0; 1; 2; 3; 4; 5].
 
 Example list_to_tree1: list_nth_on_tree [1] 1 Leaf.
 Proof.
-  simpl.
-  unfold Zlength.
-  simpl.
-  lia.
+  apply list_nth_on_tree_Leaf.
+  + unfold Zlength.
+    simpl.
+    lia.
+  + auto.
 Qed.
 
 Example list_to_tree2: list_nth_on_tree list_example 2 tree2.
 Proof.
-  simpl.
-  unfold list_example, Zlength.
-  simpl.
-  split; [lia | ].
-  split; [tauto | ].
-  split; [split; [lia | ] | split; [lia | ] ].
-  + split; [tauto | lia].
-  + split; [tauto | lia].  
+  apply list_nth_on_tree_Node with (v := 2) (ls := tree4) (rs := tree5); auto.
+  + unfold list_example, Zlength; simpl; lia.
+  + unfold list_example; simpl.
+    apply list_nth_on_tree_Node with (v := 4) (ls := Leaf) (rs := Leaf); auto.
+    - unfold Zlength; simpl; lia.
+    - apply list_nth_on_tree_Leaf; auto.
+      unfold Zlength; simpl; lia.
+    - apply list_nth_on_tree_Leaf; auto.
+      unfold Zlength; simpl; lia.
+  + apply list_nth_on_tree_Node with (v := 5) (ls := Leaf) (rs := Leaf); auto.    
+    - unfold Zlength; simpl; lia.
+    - apply list_nth_on_tree_Leaf; auto.
+      unfold Zlength; simpl; lia.
+    - apply list_nth_on_tree_Leaf; auto.
+      unfold Zlength; simpl; lia.
 Qed.
 
 Example list_to_tree3: list_nth_on_tree list_example 1 tree1.
 Proof.
-  unfold tree1, list_nth_on_tree.
-  fold list_nth_on_tree.
-  split.
-  + unfold list_example, Zlength.
-    simpl.
-    lia.
-  + split; [tauto | ].
-    split; [apply list_to_tree2 | simpl].
-    unfold list_example, Zlength.
-    simpl.
-    split; [lia | ].
-    split; [tauto | lia].
+  apply list_nth_on_tree_Node with (v := 1) (ls := tree2) (rs := tree3); auto; simpl.
+  + unfold Zlength; simpl; lia.
+  + apply list_to_tree2.
+  + apply list_nth_on_tree_Node with (v := 3) (ls := Leaf) (rs := Leaf); auto; simpl.
+    - unfold Zlength; simpl; lia.
+    - apply list_nth_on_tree_Leaf; auto.
+      unfold Zlength; simpl; lia.
+    - apply list_nth_on_tree_Leaf; auto.
+      unfold Zlength; simpl; lia.
 Qed.
 
 Definition list_on_tree (l: list Z) (tr: tree): Prop :=
@@ -162,21 +175,36 @@ Ltac try_unfold_tree :=
   unfold swap_down_right; unfold right_son_check_tree;
   unfold get_tree_val; unfold legal_tree_state; simpl.
 
-Fixpoint MaxHeap(t: tree): Prop :=
+(* Fixpoint MaxHeap(t: tree): Prop :=
   match t with 
     | Leaf => True
     | Node v ls rs => 
       (ls = Leaf \/ (get_tree_val ls) <= v) /\
       (rs = Leaf \/ (get_tree_val rs) <= v) /\ 
       MaxHeap ls /\ MaxHeap rs
-  end.
+  end. *)
 
-Fixpoint MaxHeap_partial_tree_v(lt: partial_tree) (vt: Z): Prop :=
+Inductive MaxHeap(t: tree): Prop :=
+  | MaxHeap_Leaf: t = Leaf -> MaxHeap t
+  | MaxHeap_Node: forall v ls rs,
+      t = Node v ls rs -> MaxHeap ls -> MaxHeap rs -> 
+      (ls = Leaf \/ (get_tree_val ls) <= v) ->
+      (rs = Leaf \/ (get_tree_val rs) <= v) -> MaxHeap t.
+
+(* Fixpoint MaxHeap_partial_tree_v(lt: partial_tree) (vt: Z): Prop :=
   match lt with
     | nil => True
     | (fl, v, t) :: lt0 => (MaxHeap t) /\ (t = Leaf \/ (get_tree_val t) <= v)
                           /\ (vt <= v) /\ (MaxHeap_partial_tree_v lt0 v)
-  end.
+  end. *)
+
+Inductive MaxHeap_partial_tree_v(lt: partial_tree) (vt: Z): Prop :=
+  | MaxHeap_partial_tree_v_nil: lt = nil -> MaxHeap_partial_tree_v lt vt
+  | MaxHeap_partial_tree_v_app: forall fl v t lt0,
+      lt = (fl, v, t) :: lt0 -> MaxHeap_partial_tree_v lt0 v ->
+      MaxHeap t -> (t = Leaf \/ (get_tree_val t) <= v) ->
+      vt <= v -> MaxHeap_partial_tree_v lt vt.
+  
 
 Definition MaxHeap_partial_tree(lt: partial_tree): Prop :=
   match lt with
@@ -191,8 +219,8 @@ Proof.
   destruct lt; [simpl; tauto|].
   destruct p as [[flg val] t].
   unfold MaxHeap_partial_tree.
-  unfold MaxHeap_partial_tree_v in H; fold MaxHeap_partial_tree_v in H.
-  destruct H, H0, H1.
+  inversion H; [discriminate|].
+  injection H0; intros; subst.
   tauto.
 Qed.
 
@@ -200,13 +228,10 @@ Lemma MaxHeap_partial_tree_v_change_v: forall (lt: partial_tree) (v1 v2: Z),
   MaxHeap_partial_tree_v lt v1 -> v2 <= v1 -> MaxHeap_partial_tree_v lt v2.
 Proof.
   intros.
-  destruct lt; [tauto|].
-  destruct p as [[flg val] t].
-  simpl in H; simpl.
-  split; [tauto|].
-  split; [tauto|].
-  split; [lia|].
-  tauto.
+  inversion H.
+  + apply MaxHeap_partial_tree_v_nil; tauto.
+  + apply (MaxHeap_partial_tree_v_app lt v2 fl v t lt0); try tauto.
+    lia.
 Qed.
 
 Fixpoint tree_compose (pt: partial_tree) (t: tree) :=
@@ -301,29 +326,25 @@ Proof.
   destruct H0, H2.
   pose proof MaxHeap_partial_tree_v_impl _ _ H3.
   destruct flg.
-  - unfold MaxHeap_partial_tree_v in H1; fold MaxHeap_partial_tree_v in H1.
-    assert (MaxHeap (Node val t2 t)). {
-      unfold MaxHeap; fold MaxHeap.
-      split; [tauto|].
-      destruct H1.
-      + split; [left|]; tauto.
-      + destruct H1, H5, H6.
-        split; [right|]; tauto.
+  - assert (MaxHeap (Node val t2 t)). {
+      apply (MaxHeap_Node (Node val t2 t) val t2 t); try tauto.
+      destruct H1; [left; tauto|].
+      inversion H1; [discriminate|].
+      injection H5; intros; subst.
+      tauto.
     }
     unfold tree_compose; fold tree_compose.
     destruct H1.
     * apply (IHlt H4 (Node val t2 t) H5 ltac:(tauto)).
     * apply (IHlt H4 (Node val t2 t) H5 ltac:(tauto)).
-  - unfold MaxHeap_partial_tree_v in H1; fold MaxHeap_partial_tree_v in H1.
-    assert (MaxHeap (Node val t t2)). {
-      unfold MaxHeap; fold MaxHeap.
-      split; [tauto|].
-      destruct H2.
-      + split; [left|]; tauto.
-      + split; [right|]; tauto.
+  - assert (MaxHeap (Node val t t2)). {
+      apply (MaxHeap_Node (Node val t t2) val t t2); try tauto.
+      destruct H1; [left; tauto|].
+      inversion H1; [discriminate|].
+      injection H5; intros; subst.
+      tauto.
     }
     unfold tree_compose; fold tree_compose.
-    pose proof MaxHeap_partial_tree_v_impl _ _ H3.
     destruct H1.
     * apply (IHlt H4 (Node val t t2) H5 ltac:(tauto)).
     * apply (IHlt H4 (Node val t t2) H5 ltac:(tauto)).
@@ -352,13 +373,196 @@ Definition MaxHeap_tree_down(ts: tree_state): Prop :=
   MaxHeap_partial_tree (fst ts) /\ MaxHeap_no_rt (snd ts) /\
   (exists fl v ts0 lt, (fst ts) = (fl, v, ts0) :: lt -> v >= get_tree_val (snd ts)).
 
-Fixpoint list_on_tree_state_fix(l: list Z) (ind: Z) (lt: partial_tree) (t: tree): Prop :=
+(* p 为洞的位置且洞在 Zlength l 内 *)
+Inductive list_on_partial_tree (l: list Z) (p: Z) (lt: partial_tree) : Prop :=
+  | nil_partial_tree: p = 1 -> lt = nil -> list_on_partial_tree l p lt
+  | cons_partial_tree: forall flg v t lt0, 
+    lt = (flg, v, t) :: lt0 ->
+    1 < p < Zlength l -> 
+    p = (p / 2) * 2 + (if flg then 1 else 0) ->
+    Znth (p / 2) l = v -> 
+    list_nth_on_tree l (p + (if flg then -1 else 1)) t -> 
+    list_on_partial_tree l (p / 2) lt0 -> 
+    list_on_partial_tree l p lt.
+
+Definition is_child_index (ch: Z) (p: Z) : Prop :=
+  ch >= p /\ exists n, (Z.shiftr ch n) = p.
+
+Lemma is_child_index_self: forall (ch: Z) (p: Z),
+  ch = p -> is_child_index ch p.
+Proof.
+  intros.
+  unfold is_child_index.
+  split; [lia |].
+  exists 0.
+  rewrite Z.shiftr_0_r; lia.
+Qed.
+
+Lemma less_is_not_child_index: forall (ch: Z) (p: Z),
+  ch < p -> ~ is_child_index ch p.
+Proof.
+  unfold not, is_child_index.
+  intros.
+  destruct H0.
+  lia.
+Qed.
+
+Lemma is_child_index_gp: forall (p: Z) (ch: Z),
+  p >= 0 -> is_child_index ch p -> is_child_index ch (p / 2).
+Proof.
+  intros.
+  destruct H0 as [? [x ?] ].
+  unfold is_child_index.
+  split.
+  + pose proof Z.div_le_upper_bound p 2 p ltac:(lia) ltac:(lia).
+    lia. 
+  + exists (x + 1).
+    replace (p / 2) with (Z.shiftr p 1) by (apply Z.shiftr_div_pow2; lia).
+  rewrite <- H1.
+  rewrite Z.shiftr_shiftr by lia.
+  auto.
+Qed.
+
+Lemma is_child_index_gp_inv_left: forall (p: Z) (ch: Z),
+  p >= 0 -> is_child_index ch (p * 2) -> is_child_index ch p.
+Proof.
+  intros.
+  pose proof is_child_index_gp (p * 2) ch ltac:(lia) H0.
+  replace (p * 2 / 2) with p in H1; [auto | ].
+  rewrite Z.div_mul by lia.
+  auto.
+Qed.
+
+Lemma is_child_index_gp_inv_right: forall (p: Z) (ch: Z),
+  p >= 0 -> is_child_index ch (p * 2 + 1) -> is_child_index ch p.
+Proof.
+  intros.
+  pose proof is_child_index_gp (p * 2 + 1) ch ltac:(lia) H0.
+  replace ((p * 2 + 1) / 2) with p in H1; [auto | ].
+  rewrite Z.div_add_l by lia.
+  rewrite Z.div_1_l by lia.
+  lia.
+Qed.
+
+Lemma rchild_is_not_lchild: forall (ch: Z) (p: Z) (pp: Z),
+  pp >= 1 -> 
+  p = pp * 2 + 1 -> is_child_index ch p -> ~is_child_index ch (p + -1).
+Proof.
+  intros.
+  destruct H1 as [? [n ?] ].
+  unfold not; intros.
+  destruct H3 as [? [n' ?] ].
+  pose proof Z.log2_shiftr ch n ltac:(lia).
+  rewrite H2 in H5.
+  pose proof Z.log2_shiftr ch n' ltac:(lia).
+  rewrite H4 in H6.
+  replace (p + -1) with (2 * pp) in H6 by lia.
+  replace p with (2 * pp + 1) in H5 by lia.
+  rewrite Z.log2_double in H6 by lia.
+  rewrite Z.log2_succ_double in H5 by lia.
+  rewrite H5 in H6.
+  pose proof Z.log2_nonneg pp.
+  replace (Z.max 0 (Z.log2 ch - n)) with (Z.log2 ch - n) in H6 by lia.
+  replace (Z.max 0 (Z.log2 ch - n')) with (Z.log2 ch - n') in H6 by lia.
+  assert (n = n') by lia.
+  subst.
+  lia.
+Qed.
+
+Lemma lchild_is_not_rchild: forall (ch: Z) (p: Z) (pp: Z),
+  pp >= 1 -> 
+  p = pp * 2 -> is_child_index ch p -> ~is_child_index ch (p + 1).
+Proof.
+  intros.
+  destruct H1 as [? [n ?] ].
+  unfold not; intros.
+  destruct H3 as [? [n' ?] ].
+  pose proof Z.log2_shiftr ch n ltac:(lia).
+  rewrite H2 in H5.
+  pose proof Z.log2_shiftr ch n' ltac:(lia).
+  rewrite H4 in H6.
+  replace (p + 1) with (2 * pp + 1) in H6 by lia.
+  replace p with (2 * pp) in H5 by lia.
+  rewrite Z.log2_double in H5 by lia.
+  rewrite Z.log2_succ_double in H6 by lia.
+  rewrite H5 in H6.
+  pose proof Z.log2_nonneg pp.
+  replace (Z.max 0 (Z.log2 ch - n)) with (Z.log2 ch - n) in H6 by lia.
+  replace (Z.max 0 (Z.log2 ch - n')) with (Z.log2 ch - n') in H6 by lia.
+  assert (n = n') by lia.
+  subst.
+  lia.
+Qed.
+
+Lemma list_nth_on_tree_upd: forall (l: list Z) (t: tree) (n: Z) (v: Z) (p: Z),
+  list_nth_on_tree l n t ->
+  0 <= p < Zlength l -> ~is_child_index p n ->
+  list_nth_on_tree (upd_Znth p l v) n t.
+Proof.
+  intros.
+  induction H; subst.
+  + constructor; auto.
+    rewrite upd_Znth_Zlength by lia.
+    lia.
+  + eapply list_nth_on_tree_Node; eauto.
+    - rewrite upd_Znth_Zlength by lia.
+      lia.
+    - assert (p = n \/ p <> n) by lia.
+      destruct H.
+      * pose proof is_child_index_self p n H; tauto.
+      * rewrite upd_Znth_diff by lia; tauto.
+    - apply IHlist_nth_on_tree1.
+      unfold not; intros.
+      pose proof is_child_index_gp_inv_left n p ltac:(lia) H.
+      auto.
+    - apply IHlist_nth_on_tree2.
+      unfold not; intros.
+      pose proof is_child_index_gp_inv_right n p ltac:(lia) H.
+      auto.
+Qed.
+
+Lemma list_on_partial_tree_upd: forall l ch p lt v,
+  p < Zlength l ->
+  ch < Zlength l -> 
+  is_child_index ch p ->
+  list_on_partial_tree l p lt -> list_on_partial_tree (upd_Znth ch l v) p lt.
+Proof.
+  intros.
+  induction H2.
+  + subst; constructor; auto.
+  + remember H1 as H1'; clear HeqH1'.
+    destruct H1 as [? [n ?] ].
+    destruct flg; eapply cons_partial_tree; eauto.
+    - rewrite upd_Znth_Zlength by lia; lia. 
+    - rewrite upd_Znth_diff by lia; auto.
+    - simpl.
+      apply list_nth_on_tree_upd; [auto | lia |].
+      apply rchild_is_not_lchild with (pp := (p / 2));
+        [lia | lia | auto].
+    - pose proof is_child_index_gp p ch ltac:(lia) H1'.
+      specialize (IHlist_on_partial_tree ltac:(lia) H9).
+      auto.
+    - rewrite upd_Znth_Zlength by lia; lia.
+    - rewrite upd_Znth_diff by lia; auto.
+    - simpl.
+      apply list_nth_on_tree_upd; [auto | lia |].
+      apply lchild_is_not_rchild with (pp := (p / 2));
+        [lia | lia | auto].
+    - pose proof is_child_index_gp p ch ltac:(lia) H1'.
+      specialize (IHlist_on_partial_tree ltac:(lia) H9).
+      auto.  
+Qed.
+
+(* Fixpoint list_on_tree_state_fix(l: list Z) (ind: Z) (lt: partial_tree) (t: tree): Prop :=
   (list_nth_on_tree l ind t ) /\ 
   match lt with
     | nil => ind = 1
-    | (true, v, tl) :: lt0 => list_on_tree_state_fix l (ind/2) lt0 (Node v tl t) /\ ind > 1
-    | (false, v, tr) :: lt0 => list_on_tree_state_fix l (ind/2) lt0 (Node v t tr) /\ ind > 1
-  end.
+    | (true, v, tl) :: lt0 => list_on_tree_state_fix l (ind/2) lt0 (Node v tl t) /\ ind > 1 /\ ind =  (ind/2) * 2 + 1
+    | (false, v, tr) :: lt0 => list_on_tree_state_fix l (ind/2) lt0 (Node v t tr) /\ ind > 1 /\ ind =  (ind/2) * 2
+  end. *)
+
+Definition list_on_tree_state_fix(l: list Z) (p: Z) (lt: partial_tree) (t: tree): Prop :=
+  list_nth_on_tree l p t /\ list_on_partial_tree l p lt.
 
 Definition list_on_tree_state(l: list_state) (t: tree_state): Prop :=
   list_on_tree_state_fix (fst l) (snd l) (fst t) (snd t).
@@ -366,27 +570,14 @@ Definition list_on_tree_state(l: list_state) (t: tree_state): Prop :=
 Lemma list_nth_on_tree_inj: forall (l: list Z) (n: Z) (t1 t2: tree),
   list_nth_on_tree l n t1 -> list_nth_on_tree l n t2 -> t1 = t2.
 Proof.
-  intros.
-  revert n t2 H H0.
-  induction t1; intros.
-  + unfold list_nth_on_tree in H.
-    destruct t2; [reflexivity|].
-    unfold list_nth_on_tree in H0.
-    destruct H0.
-    lia.
-  + unfold list_nth_on_tree in H; fold list_nth_on_tree in H.
-    destruct H, H1, H2. 
-    destruct t2.
-    - unfold list_nth_on_tree in H0.
-      lia.
-    - unfold list_nth_on_tree in H0; fold list_nth_on_tree in H0.
-      destruct H0, H4, H5.
-      specialize (IHt1_1 (n*2) t2_1 H2 H5).
-      specialize (IHt1_2 (n*2+1) t2_2 H3 H6).
-      replace v with v0 by lia.
-      rewrite IHt1_1.  
-      rewrite IHt1_2.
-      reflexivity.
+  intros; revert H0; revert t2.
+  induction H; intros.
+  + inversion H1; subst; auto; lia.
+  + inversion H4; subst.
+    - lia.
+    - specialize (IHlist_nth_on_tree1 _ H8).
+      specialize (IHlist_nth_on_tree2 _ H9).
+      subst; auto. 
 Qed.
 
 Lemma list_on_tree_inj: forall (l: list Z) (t1 t2: tree),
@@ -404,39 +595,24 @@ Proof.
   intros.
   unfold list_on_tree_state in H.
   destruct t as [lt t].
-  simpl in H.
-  destruct lt; [simpl; tauto|].
-  destruct p as [ [flg v] tr ].
-  destruct flg.
-  + simpl in H.
-    destruct H, H1.
-    destruct lt;
-    unfold list_on_tree_state_fix in H1;
-    destruct H1; rewrite H0 in H1;
-    replace (1/2) with 0 in H1 by tauto;
-    lia.
-  + simpl in H.
-    destruct H, H1.
-    destruct lt;
-    unfold list_on_tree_state_fix in H1;
-    destruct H1; rewrite H0 in H1;
-    replace (1/2) with 0 in H1 by tauto;
-    lia.
+  simpl in H; simpl.
+  unfold list_on_tree_state_fix in H.
+  destruct H.
+  inversion H1; [auto | lia].
 Qed.
 
 Lemma legal_list_impl_legal_tree_state: forall (l: list_state) (t: tree_state),
  list_on_tree_state l t -> legal_list_state l -> legal_tree_state t.
 Proof.
+  unfold list_on_tree_state.
   intros.
   destruct t as [lt t].
+  simpl in H. 
   destruct t.
-  + unfold list_on_tree_state in H.
-    simpl in H.
-    destruct lt;
-    simpl in H;
-    destruct H;
-    unfold legal_list_state in H0;
-    lia.
+  + unfold list_on_tree_state_fix in H.
+    destruct H.
+    unfold legal_list_state in H0.
+    inversion H; [lia | discriminate].
   + unfold legal_tree_state.
     exists v, t1, t2.
     tauto.
@@ -449,26 +625,21 @@ Proof.
   intros.
   pose proof legal_list_impl_legal_tree_state _ _ H H0.
   unfold list_on_tree_state in H.
+  unfold list_on_tree_state_fix in H.
   destruct t as [lt t].
-  destruct lt.
-  + simpl in H; destruct H.
-    lia.
-  + destruct p as [[flg val] tr].
-    exists lt, val, tr, flg.
-    simpl.
-    split; [reflexivity|].
-    unfold legal_tree_state in H2.
-    destruct H2 as [v [ls [rs]]].
-    simpl in H2; subst.
-    simpl in H.
-    destruct H, H, H3, H4.
-    split; [simpl; unfold get_list_val; lia|].
-    unfold get_list_val; simpl.
-    destruct flg.
-    - destruct H2.
-      destruct lt; simpl in H2; lia.
-    - destruct H2.
-      destruct lt; simpl in H2; lia.
+  simpl; simpl in H.
+  destruct H.
+  inversion H3; [lia | ].
+  exists lt0, v, t0, flg.
+  split; [auto | ].
+  unfold legal_tree_state in H2.
+  destruct H2 as [v' [ls [rs]]].
+  simpl in H2; subst.
+  inversion H; [discriminate | ].
+  inversion H2; subst.
+  split; simpl.
+  + unfold get_list_val; auto.
+  + unfold get_list_val; simpl; auto.
 Qed.
 
 Lemma list_on_tree_state_impl_tree_compose: forall (l: list_state) (t: tree_state),
@@ -476,66 +647,238 @@ Lemma list_on_tree_state_impl_tree_compose: forall (l: list_state) (t: tree_stat
 Proof.
   intros.
   destruct t as [lt t].
-  simpl.
-  revert t l H.
-  induction lt; intros.
-  + unfold list_on_tree_state in H.
-    simpl in H.
-    destruct H.
-    simpl.
+  destruct l as [l n].
+  unfold list_on_tree_state, list_on_tree_state_fix in H.
+  revert H; revert l n t.
+  induction lt; simpl; intros; destruct H.
+  + inversion H0; [| discriminate].
     unfold list_on_tree.
-    rewrite <- H0.
+    rewrite <- H1.
     tauto.
-  + destruct a as [[flg v] tr ].
+  + simpl in IHlt.
+    inversion H0; [discriminate | ].
+    apply cons_inv in H1; destruct H1.
+    rewrite H1; subst.
     destruct flg.
-    - simpl.
-      unfold list_on_tree_state in H; simpl in H.
-      specialize (IHlt (Node v tr t) (fst l,snd l / 2)).
-      simpl in IHlt; apply IHlt.
-      unfold list_on_tree_state; simpl.
-      tauto.
-    - simpl.
-      unfold list_on_tree_state in H; simpl in H.
-      specialize (IHlt (Node v t tr) (fst l,snd l / 2)).
-      simpl in IHlt; apply IHlt.
-      unfold list_on_tree_state; simpl.
-      tauto.
+    - specialize (IHlt l  (n / 2) (Node (Znth (n / 2) l) t0 t)).
+      apply IHlt.
+      split; [ | auto].
+      eapply list_nth_on_tree_Node; eauto; [lia | | ].
+      * replace (n / 2 * 2) with (n + -1) by lia; auto.
+      * replace (n / 2 * 2 + 1) with n by lia; auto.
+    - specialize (IHlt l  (n / 2) (Node (Znth (n / 2) l) t t0)).
+      apply IHlt.
+      split; [ | auto].
+      eapply list_nth_on_tree_Node; eauto; [lia | | ].
+      * replace (n / 2 * 2) with n by lia; auto.
+      * replace (n / 2 * 2 + 1) with (n + 1) by lia; auto.
 Qed.
 
 Lemma list_nth_on_tree_replace: forall (l l': list Z) (t: tree) (n: Z),
-  Zlength l = Zlength l' -> n >= 0-> (forall i, i >= n -> Znth i l = Znth i l') -> list_nth_on_tree l n t -> list_nth_on_tree l' n t.
+  Zlength l = Zlength l' -> n >= 0 -> (forall i, i >= n -> Znth i l = Znth i l') -> list_nth_on_tree l n t -> list_nth_on_tree l' n t.
 Proof.
   intros.
-  revert n l l' H H0 H1 H2.
-  induction t; intros.
-  + simpl in H1; simpl.
-    rewrite <- H.
-    apply H2.
-  + simpl in H2; simpl.
-    destruct H2, H3.
-    split; [rewrite <- H; tauto|].
-    pose proof (H1 n ltac:(lia)).
-    split; [rewrite <- H5; tauto|].
-    assert (forall i : Z, i >= (n*2) -> Znth i l = Znth i l'). {
-      intros.
-      assert (i >= n) by lia.
-      apply (H1 i H7).
-    }
-    assert (forall i : Z, i >= (n*2+1) -> Znth i l = Znth i l'). {
-      intros.
-      assert (i >= n) by lia.
-      apply (H1 i H8).
-    }
-    destruct H4.
-    split.
-    - apply (IHt1 (n*2) _ _ H ltac:(lia)); tauto.
-    - apply (IHt2 (n*2+1) _ _ H ltac:(lia)); tauto.
+  revert H1 H; revert l'.
+  induction H2; subst; simpl; intros.
+  + apply list_nth_on_tree_Leaf; auto; lia.
+  + eapply list_nth_on_tree_Node; eauto.
+    - lia.
+    - specialize (H2 n ltac:(lia)); auto.
+    - specialize (IHlist_nth_on_tree1 ltac:(lia) l').
+      apply IHlist_nth_on_tree1; [ intros | auto].
+      specialize (H2 i ltac:(lia)); auto.
+    - specialize (IHlist_nth_on_tree2 ltac:(lia) l').
+      apply IHlist_nth_on_tree2; [ intros | auto].
+      specialize (H2 i ltac:(lia)); auto. 
 Qed.
 
-Lemma swap_up_hold_true: forall (l l': list_state) (ls rs tr: tree) (v1 v2: Z) (lt: partial_tree),
-  list_on_tree_state l ((true,v2,tr)::lt, Node v1 ls rs) -> list_relation.list_swap (snd l) (snd l) (fst l) (fst l') -> snd l / 2 = snd l' -> list_on_tree_state l' (lt, Node v1 tr (Node v2 ls rs)).
+Lemma swap_up_right_hold_true: forall (l l': list_state) (ls rs tr: tree) (v1 v2: Z) (lt: partial_tree),
+  list_on_tree_state l ((true,v2,tr) :: lt, Node v1 ls rs) -> list_relation.list_swap (snd l) (snd l') (fst l) (fst l') -> snd l / 2 = snd l' -> list_on_tree_state l' (lt, Node v1 tr (Node v2 ls rs)).
 Proof.
-Admitted.
+  unfold list_on_tree_state.
+  unfold list_on_tree_state_fix.
+  destruct l as [l n].
+  destruct l' as [l' n'].
+  simpl; intros; subst.
+  destruct H.
+  inversion H1; [discriminate |].
+  apply cons_inv in H2; destruct H2.
+  inversion H2; subst; clear H2.
+  assert (1 <= n / 2 < n). {
+    split.
+    + pose proof Z.div_le_lower_bound n 2 1 ltac:(lia) ltac:(lia).
+      lia.
+    + pose proof Z.div_lt_upper_bound n 2 n ltac:(lia) ltac:(lia).
+      lia. 
+  }
+  inversion H; [discriminate |].
+  inversion H5.
+  pose proof list_swap_rela_rewrite l l' n (n / 2) ltac:(lia) ltac:(lia) H0.
+  subst; clear H0.
+  split.
+  + eapply list_nth_on_tree_Node; eauto.
+    - rewrite list_swap_Zlength by lia; lia.
+    - unfold list_swap.
+      rewrite upd_Znth_diff.
+      * rewrite upd_Znth_same; [auto | lia].
+      * rewrite upd_Znth_Zlength by lia; lia.
+      * rewrite upd_Znth_Zlength by lia; lia.
+      * lia.
+    - replace (n / 2 * 2) with (n + -1) by lia. 
+      unfold list_swap.
+      apply list_nth_on_tree_upd.
+      * apply list_nth_on_tree_upd; [auto | lia |].
+        apply less_is_not_child_index; lia.
+      * rewrite upd_Znth_Zlength by lia; lia.
+      * apply rchild_is_not_lchild with (pp := n / 2); [lia | lia |].
+        apply is_child_index_self; auto.
+    - rewrite <- H4.
+      eapply list_nth_on_tree_Node.
+      * reflexivity.
+      * rewrite list_swap_Zlength by lia; lia.
+      * unfold list_swap.
+        rewrite upd_Znth_same; [reflexivity | ].
+        rewrite upd_Znth_Zlength by lia; lia.
+      * unfold list_swap.
+        apply list_nth_on_tree_upd.
+        -- apply list_nth_on_tree_upd; [auto | lia |].
+           apply less_is_not_child_index; lia.
+        -- rewrite upd_Znth_Zlength by lia; lia.
+        -- apply less_is_not_child_index; lia.
+      * unfold list_swap.
+        apply list_nth_on_tree_upd.
+        -- apply list_nth_on_tree_upd; [auto | lia |].
+           apply less_is_not_child_index; lia.
+        -- rewrite upd_Znth_Zlength by lia; lia.
+        -- apply less_is_not_child_index; lia.
+  + inversion H7; subst.
+    - eapply nil_partial_tree; eauto.
+    - pose proof Z.div_lt_upper_bound (n / 2) 2 (n / 2) ltac:(lia) ltac:(lia).
+      pose proof Z.div_le_lower_bound (n / 2) 2 1 ltac:(lia) ltac:(lia).
+      eapply cons_partial_tree; eauto.
+      * rewrite list_swap_Zlength by lia; lia. 
+      * unfold list_swap.
+        rewrite upd_Znth_diff.
+        -- rewrite upd_Znth_diff by lia; reflexivity.
+        -- rewrite upd_Znth_Zlength by lia; lia.
+        -- rewrite upd_Znth_Zlength by lia; lia.
+        -- lia.
+      * unfold list_swap.
+        apply list_nth_on_tree_upd.
+        -- apply list_nth_on_tree_upd; [auto | lia |].
+           destruct flg.
+           ++ apply rchild_is_not_lchild with (pp := n / 2 / 2); [lia | lia |].
+              apply is_child_index_self; auto.
+           ++ apply less_is_not_child_index; lia. 
+        -- rewrite upd_Znth_Zlength by lia; lia.
+        -- destruct flg.
+           ++ apply rchild_is_not_lchild with (pp := n / 2 / 2); [lia | lia |].
+              apply is_child_index_gp; [lia | apply is_child_index_self; auto].
+           ++ apply lchild_is_not_rchild with (pp := n / 2 / 2); [lia | lia |].
+              apply is_child_index_gp; [lia | apply is_child_index_self; auto].
+      * unfold list_swap.
+        apply list_on_partial_tree_upd.
+        -- rewrite upd_Znth_Zlength by lia; lia.
+        -- rewrite upd_Znth_Zlength by lia; lia.
+        -- apply is_child_index_gp; [lia | ].
+           apply is_child_index_gp; [lia | apply is_child_index_self; auto].
+        -- apply list_on_partial_tree_upd; [lia | lia | |auto].
+           apply is_child_index_gp; [lia | apply is_child_index_self; auto].
+Qed.
+
+Lemma swap_up_left_hold_true: forall (l l': list_state) (ls rs tr: tree) (v1 v2: Z) (lt: partial_tree),
+  list_on_tree_state l ((false,v2,tr) :: lt, Node v1 ls rs) -> list_relation.list_swap (snd l) (snd l') (fst l) (fst l') -> snd l / 2 = snd l' -> list_on_tree_state l' (lt, (Node v1 (Node v2 ls rs) tr)).
+Proof.
+  unfold list_on_tree_state.
+  unfold list_on_tree_state_fix.
+  destruct l as [l n].
+  destruct l' as [l' n'].
+  simpl; intros; subst.
+  destruct H.
+  inversion H1; [discriminate |].
+  apply cons_inv in H2; destruct H2.
+  inversion H2; subst; clear H2.
+  assert (1 <= n / 2 < n). {
+    split.
+    + pose proof Z.div_le_lower_bound n 2 1 ltac:(lia) ltac:(lia).
+      lia.
+    + pose proof Z.div_lt_upper_bound n 2 n ltac:(lia) ltac:(lia).
+      lia. 
+  }
+  inversion H; [discriminate |].
+  inversion H5.
+  pose proof list_swap_rela_rewrite l l' n (n / 2) ltac:(lia) ltac:(lia) H0.
+  subst; clear H0.
+  split.
+  + eapply list_nth_on_tree_Node; eauto.
+    - rewrite list_swap_Zlength by lia; lia.
+    - unfold list_swap.
+      rewrite upd_Znth_diff.
+      * rewrite upd_Znth_same; [auto | lia].
+      * rewrite upd_Znth_Zlength by lia; lia.
+      * rewrite upd_Znth_Zlength by lia; lia.
+      * lia.
+    - replace (n / 2 * 2) with n by lia.
+      eapply list_nth_on_tree_Node.
+      * reflexivity.
+      * rewrite list_swap_Zlength by lia; lia.
+      * unfold list_swap.
+        rewrite upd_Znth_same; [reflexivity | ].
+        rewrite upd_Znth_Zlength by lia; lia.
+      * unfold list_swap.
+        apply list_nth_on_tree_upd.
+        -- apply list_nth_on_tree_upd; [auto | lia |].
+           apply less_is_not_child_index; lia.
+        -- rewrite upd_Znth_Zlength by lia; lia.
+        -- apply less_is_not_child_index; lia.
+      * unfold list_swap.
+        apply list_nth_on_tree_upd.
+        -- apply list_nth_on_tree_upd; [auto | lia |].
+           apply less_is_not_child_index; lia.
+        -- rewrite upd_Znth_Zlength by lia; lia.
+        -- apply less_is_not_child_index; lia. 
+    - replace (n / 2 * 2 + 1) with (n + 1) by lia.
+      unfold list_swap.
+      apply list_nth_on_tree_upd.
+      * apply list_nth_on_tree_upd; [auto | lia |].
+        apply less_is_not_child_index; lia.
+      * rewrite upd_Znth_Zlength by lia; lia.
+      * apply lchild_is_not_rchild with (pp := n / 2); [lia | lia |].
+        apply is_child_index_self; auto.
+  + inversion H7; subst.
+    - eapply nil_partial_tree; eauto.
+    - pose proof Z.div_lt_upper_bound (n / 2) 2 (n / 2) ltac:(lia) ltac:(lia).
+      pose proof Z.div_le_lower_bound (n / 2) 2 1 ltac:(lia) ltac:(lia).
+      eapply cons_partial_tree; eauto.
+      * rewrite list_swap_Zlength by lia; lia. 
+      * unfold list_swap.
+        rewrite upd_Znth_diff.
+        -- rewrite upd_Znth_diff by lia; reflexivity.
+        -- rewrite upd_Znth_Zlength by lia; lia.
+        -- rewrite upd_Znth_Zlength by lia; lia.
+        -- lia.
+      * unfold list_swap.
+        apply list_nth_on_tree_upd.
+        -- apply list_nth_on_tree_upd; [auto | lia |].
+           destruct flg.
+           ++ apply rchild_is_not_lchild with (pp := n / 2 / 2); [lia | lia |].
+              apply is_child_index_self; auto.
+           ++ apply less_is_not_child_index; lia. 
+        -- rewrite upd_Znth_Zlength by lia; lia.
+        -- destruct flg.
+           ++ apply rchild_is_not_lchild with (pp := n / 2 / 2); [lia | lia |].
+              apply is_child_index_gp; [lia | apply is_child_index_self; auto].
+           ++ apply lchild_is_not_rchild with (pp := n / 2 / 2); [lia | lia |].
+              apply is_child_index_gp; [lia | apply is_child_index_self; auto].
+      * unfold list_swap.
+        apply list_on_partial_tree_upd.
+        -- rewrite upd_Znth_Zlength by lia; lia.
+        -- rewrite upd_Znth_Zlength by lia; lia.
+        -- apply is_child_index_gp; [lia | ].
+           apply is_child_index_gp; [lia | apply is_child_index_self; auto].
+        -- apply list_on_partial_tree_upd; [lia | lia | |auto].
+           apply is_child_index_gp; [lia | apply is_child_index_self; auto].
+Qed.
 
 Lemma Up_tree_list_succeed: forall (l l': list_state) (t: tree_state),
   list_on_tree_state l t -> list_up_succeed l l' -> MaxHeap_tree_up t ->
@@ -550,12 +893,12 @@ Proof.
   pose proof legal_list_impl_legal_tree_state _ _ H H0.
   unfold legal_tree_state in H10.
   destruct H10 as [v2 [ls [rs]]].
+  rewrite H4 in H5.
+  unfold get_list_val in H9; simpl in H9.
+  rewrite H10 in H8; unfold get_tree_val in H8.
+  assert (v2 > v) by lia.
   destruct flg.
   + exists (lt, (Node v2 tr (Node v ls rs))).
-    rewrite H4 in H5.
-    unfold get_list_val in H9; simpl in H9.
-    rewrite H10 in H8; unfold get_tree_val in H8.
-    assert (v2 > v) by lia.
     split.
     - unfold tree_up_succeed.
       exists (true, v, tr), lt.
@@ -567,7 +910,9 @@ Proof.
       unfold swap_up_and_combine; simpl.
       reflexivity.
     - split.
-      * give_up.
+      * eapply swap_up_right_hold_true; eauto.
+        rewrite H7, <- H10.
+        auto.
       * unfold MaxHeap_tree_up; simpl.
         unfold MaxHeap_tree_up in H1.
         destruct H1.
@@ -582,26 +927,96 @@ Proof.
         rewrite H10 in H15.
         injection H15; intros; subst.
         split. destruct H13.
-        ++ split; [left; tauto|].
-           split; [right; lia|].
-           split; [tauto|].
+        ++ eapply MaxHeap_Node; [ reflexivity |apply H1 | |left; tauto|right; unfold get_tree_val; lia].
            destruct H16.
-           split. destruct H9; [tauto|rewrite <- H7 in H9; simpl in H9; right; tauto].
-           split. destruct H13; [tauto|rewrite <- H7 in H13; simpl in H13; right; tauto].
-           tauto.
-        ++ split;[right; lia|].
-           split; [right; lia|].
-           split; [tauto|].
+           inversion H12;[discriminate|].
+           injection H16; intros; subst.
+           eapply MaxHeap_Node; [reflexivity| | | | ]; try tauto.
+           destruct H9; [left; tauto|].
+           inversion H8; rewrite H9 in H7; [discriminate|].
+           injection H7; intros; subst.
+           right; lia.
+           destruct H13; [left; tauto|]. inversion H8; rewrite H13 in H7; [discriminate|].
+           injection H7; intros; subst.
+           right; lia.
+        ++ eapply MaxHeap_Node;[reflexivity|apply H1| | right; lia| right; unfold get_tree_val; lia].
            destruct H16.
-           split. destruct H9; [tauto|rewrite <- H7 in H9; simpl in H9; right; tauto].
-           split. destruct H13; [tauto|rewrite <- H7 in H13; simpl in H13; right; tauto].
-           tauto.
+           inversion H12;[discriminate|].
+           injection H16; intros; subst.
+           eapply MaxHeap_Node; [reflexivity| | | | ]; try tauto.
+           destruct H9; [left; tauto|].
+           inversion H9; rewrite H21 in H7; [discriminate|].
+           injection H7; intros; subst.
+           right; lia.
+           destruct H13; [left; tauto|].
+           inversion H13; rewrite H21 in H7; [discriminate|].
+           injection H7; intros; subst.
+           right; lia.
         ++ exists (get_list_val l), tr, (Node (Znth (snd l / 2) (fst l)) ls2 rs2); simpl.
            split; [reflexivity|].
            split; [|right; tauto].
            destruct H13; [left; tauto|right].
            apply (MaxHeap_partial_tree_v_change_v _ _ _ H14 H8).
-Admitted.
+  + exists (lt, (Node v2 (Node v ls rs) tr)).
+    split.
+    - unfold tree_up_succeed.
+      exists (false, v, tr), lt.
+      split; [tauto|].
+      split; [tauto|].
+      split; [|rewrite H10; simpl; lia].
+      exists v2, ls, rs.
+      split; [|tauto].
+      unfold swap_up_and_combine; simpl.
+      reflexivity.
+    - split.
+      * eapply swap_up_left_hold_true; eauto.
+        rewrite H7, <- H10.
+        auto.
+      * unfold MaxHeap_tree_up. simpl.
+        unfold MaxHeap_tree_up in H1.
+        destruct H1.
+        rewrite <- H7 in H1.
+        unfold MaxHeap_partial_tree in H1.
+        destruct H1, H13.
+        split; [apply (MaxHeap_partial_tree_v_impl _ _ H14)|].
+        destruct H12.
+        destruct H15 as [v3 [ls2 [rs2]]].
+        rewrite H10 in H12; simpl in H12.
+        destruct H15.
+        rewrite H10 in H15.
+        injection H15; intros; subst.
+        split. destruct H13.
+        ++ eapply MaxHeap_Node; [ reflexivity | |apply H1 |right; unfold get_tree_val; lia|left; tauto].
+           destruct H16.
+           inversion H12;[discriminate|].
+           injection H16; intros; subst.
+           eapply MaxHeap_Node; [reflexivity| | | | ]; try tauto.
+           destruct H9; [left; tauto|].
+           inversion H8; rewrite H9 in H7; [discriminate|].
+           injection H7; intros; subst.
+           right; lia.
+           destruct H13; [left; tauto|]. inversion H8; rewrite H13 in H7; [discriminate|].
+           injection H7; intros; subst.
+           right; lia.
+        ++ eapply MaxHeap_Node; [ reflexivity | |apply H1 |right; unfold get_tree_val; lia|right; lia].
+           destruct H16.
+           inversion H12;[discriminate|].
+           injection H16; intros; subst.
+           eapply MaxHeap_Node; [reflexivity| | | | ]; try tauto.
+           destruct H9; [left; tauto|].
+           inversion H9; rewrite H21 in H7; [discriminate|].
+           injection H7; intros; subst.
+           right; lia.
+           destruct H13; [left; tauto|].
+           inversion H13; rewrite H21 in H7; [discriminate|].
+           injection H7; intros; subst.
+           right; lia.
+        ++ exists (get_list_val l), (Node (Znth (snd l / 2) (fst l)) ls2 rs2), tr; simpl.
+           split; [reflexivity|].
+           split; [right; tauto |].
+           destruct H13; [left; tauto|right].
+           apply (MaxHeap_partial_tree_v_change_v _ _ _ H14 H8).
+Qed.
 
 Lemma Up_tree_list_succeed_clos_refl_trans: forall (l l': list_state) (t: tree_state),
   list_on_tree_state l t -> (clos_refl_trans list_up_succeed) l l' -> MaxHeap_tree_up t ->
@@ -689,10 +1104,9 @@ Proof.
       destruct H1.
       apply (tree_compose_MaxHeap ((flg, val, t2) :: lt) Leaf H1 ltac:(tauto)).
     - assert (MaxHeap_partial_tree_v ((flg, val, t2) :: lt) v). {
-        unfold MaxHeap_partial_tree_v; fold MaxHeap_partial_tree_v.
+        eapply MaxHeap_partial_tree_v_app; [reflexivity| | | | ]; try tauto.
         simpl in H.
-        assert (v <= val) by lia.
-        tauto.
+        lia.
       }
       destruct H1.
       apply (tree_compose_MaxHeap ((flg, val, t2) :: lt) (Node v t1 t3) H1 ltac:(tauto)).
@@ -736,6 +1150,7 @@ Lemma Down_tree_list_succeed: forall (l l': list_state) (t: tree_state),
   list_on_tree_state l t -> list_down_succeed l l' -> MaxHeap_tree_down t ->
   exists t', tree_down_succeed t t' /\ list_on_tree_state l' t' /\ MaxHeap_tree_down t'.
 Proof.
+  intros.
 Admitted.
 
 (* Lemma Down_tree_list_succeed_clos_refl_trans: forall (l l': list_state) (t: tree_state),
@@ -775,72 +1190,50 @@ Definition get_snd_01(n: Z): bool:=
     | Z.neg _ => false
   end.
 
-Fixpoint tree_to_partial_tree (t: tree): partial_tree :=
+Fixpoint tree_to_partial_tree_fix (tl: partial_tree) (t: tree): partial_tree :=
   match t with
-    | Leaf => nil
+    | Leaf => tl
     | Node v ls rs => 
       match get_snd_01(tree_size t) with
-      | true => (tree_to_partial_tree rs) ++ [(true, v, ls)]
-      | false => (tree_to_partial_tree ls) ++ [(false, v, rs)]
+      | true => tree_to_partial_tree_fix ((true, v, ls) :: tl) rs
+      | false => tree_to_partial_tree_fix ((true, v, rs) :: tl) ls
       end (*true go right and right is cut*)
   end.
 
-Lemma tree_to_partial_tree_rt_max: forall (rt tmp: tree) (lt: partial_tree) (v: Z) (flg: bool),
-  (flg,v,tmp)::lt = tree_to_partial_tree rt -> v <= get_tree_val rt.
-Proof.
-  intros.
-  revert v flg tmp lt H.
-  induction rt; intros.
-  + simpl in H.
-    discriminate.
-  + simpl.
-    simpl in H.
-(* Qed. *)
-Admitted.
-
-Lemma partial_tree_MaxHeap_app: forall (rt tmp: tree) (v: Z) (flg: bool),
-  MaxHeap_partial_tree (tree_to_partial_tree rt) -> (rt = Leaf \/ v >= get_tree_val rt) -> MaxHeap tmp -> (tmp = Leaf \/ get_tree_val tmp <= v) -> MaxHeap_partial_tree ((tree_to_partial_tree rt) ++ [(flg,v,tmp)]).
-Proof.
-  intros.
-  revert v tmp H1 H2 H H0.
-  remember (tree_to_partial_tree rt) as Hq.
-  induction Hq; intros.
-  + give_up.
-  + subst.
-    rewrite <- app_comm_cons.
-    destruct a as [[flg2 val] tr ].
-    unfold MaxHeap_partial_tree.
-    simpl in H.
-    split; [tauto|].  
-    split; [tauto|].
-    destruct H, H3.
-    pose proof MaxHeap_partial_tree_v_impl _ _ H4.
-    (* specialize IHp.
-    pose proof tree_to_partial_tree_rt_max _ _ _ _ _ HeqHq.
-    destruct Hq.
-    - destruct H0; [rewrite H0 in HeqHq; simpl in HeqHq; discriminate|].
-      simpl.
-      simpl in H.
-      split; [tauto|].
-      split; [tauto|].
-      split; [lia|tauto].
-    -
-      tauto.
-    assert (MaxHeap_partial_tree p). {
-      unfold MaxHeap_partial_tree.
-      (* destruct p *)
-    }
-    unfold s *)
-Admitted.
+Definition tree_to_partial_tree (t: tree): partial_tree := 
+  tree_to_partial_tree_fix nil t.
 
 Lemma list_on_tree_state_app: forall (l: list Z) (t: tree) (v: Z),
   list_on_tree l t -> list_on_tree_state (l++[v], Zlength l) (tree_to_partial_tree t,Node v Leaf Leaf).
 Proof.
+  intros.
 Admitted.
 
 Definition tree_push: tree -> Z -> tree -> Prop :=
   fun t val t' =>
     exists (ts: tree_state), heap_tree_up ((tree_to_partial_tree t), Node val Leaf Leaf) ts /\ t' = (tree_compose (fst ts) (snd ts)).
+
+Lemma tree_to_partial_tree_fix_hold: forall (lt: partial_tree) (t: tree),
+  MaxHeap_partial_tree lt -> MaxHeap t -> (t = Leaf \/ MaxHeap_partial_tree_v lt (get_tree_val t)) -> MaxHeap_partial_tree (tree_to_partial_tree_fix lt t).
+Proof.
+  intros.
+  revert lt H H1.
+  induction H0; intros.
+  + rewrite H.
+    simpl.
+    apply H0.
+  + subst.
+    destruct H3; [discriminate|].
+    simpl in H.
+    simpl.
+    destruct (get_snd_01 (1 + tree_size ls + tree_size rs)).
+    - apply IHMaxHeap2; [simpl; tauto|].
+      destruct H1; [left; tauto|right].
+      eapply MaxHeap_partial_tree_v_app; [reflexivity| | | | ]; tauto.
+    - apply IHMaxHeap1; [simpl; tauto|].
+      destruct H0; [left; tauto|right].
+      eapply MaxHeap_partial_tree_v_app; [reflexivity| | | | ]; tauto.
+Qed.
 
 Lemma MaxHeap_impl_MaxHeap_tree_up: forall (t: tree) (v: Z),
   MaxHeap t -> MaxHeap_tree_up (tree_to_partial_tree t,Node v Leaf Leaf).
@@ -852,36 +1245,26 @@ Proof.
     unfold MaxHeap_tree_up.
     simpl.
     split; [tauto|].
-    split; [tauto|].
-    exists v, Leaf, Leaf.
-    tauto.
+    split.
+    - eapply MaxHeap_Node; [reflexivity| | | | ]; tauto.
+    - exists v, Leaf, Leaf.
+      tauto.
   + unfold MaxHeap_tree_up.
     unfold fst, snd.
-    unfold MaxHeap in H; fold MaxHeap in H.
-    destruct H, H0, H1.
+    inversion H; [discriminate|].
+    injection H0; intros; subst.
     specialize (IHt1 H1).
     specialize (IHt2 H2).
-    unfold MaxHeap.
     split.
-    unfold tree_to_partial_tree; fold tree_to_partial_tree.
-    destruct (get_snd_01 (tree_size (Node v0 t1 t2))).
-    - unfold MaxHeap_tree_up in IHt2.
-      destruct IHt2.
-      unfold fst in H3.
-      assert (t2 = Leaf \/ v0 >= get_tree_val t2). {
-        destruct H0; [left;tauto|right;lia].
-      }
-      apply (partial_tree_MaxHeap_app t2 t1 v0 true H3 H5); tauto.
-    - unfold MaxHeap_tree_up in IHt1.
-      destruct IHt1.
-      unfold fst in H3.
-      assert (t1 = Leaf \/ v0 >= get_tree_val t1). {
-        destruct H; [left;tauto|right;lia].
-      }
-      apply (partial_tree_MaxHeap_app t1 t2 v0 false H3 H5); tauto.
-    - split; [tauto|].
-      exists v, Leaf, Leaf.
-      tauto.
+    2: {
+      split; [|exists v, Leaf, Leaf; tauto].
+      eapply MaxHeap_Node; [reflexivity| | | |]; try tauto.
+      apply MaxHeap_Leaf; reflexivity.
+      apply MaxHeap_Leaf; reflexivity.
+    }
+    unfold tree_to_partial_tree.
+    apply tree_to_partial_tree_fix_hold; [unfold MaxHeap_partial_tree; tauto|tauto|right].
+    apply MaxHeap_partial_tree_v_nil; reflexivity.
 Qed.
 
 Lemma Push_tree_list_rel: forall (l l': list Z) (t: tree) (v: Z),

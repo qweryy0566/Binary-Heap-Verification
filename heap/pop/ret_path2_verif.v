@@ -25,6 +25,7 @@ Proof.
     assert (size0 = 1) by lia.
     subst.
     unfold heap_pop.
+    
     left.
     split.
     - rewrite Zlength_firstn.
