@@ -481,15 +481,15 @@ Proof.
       lia.
     - assert (p = n \/ p <> n) by lia.
       destruct H2.
-      * pose proof is_child_index_self p n H; tauto.
+      * pose proof is_child_index_self p n H2; tauto.
       * rewrite upd_Znth_diff by lia; tauto.
     - apply IHlist_nth_on_tree1.
       unfold not; intros.
-      pose proof is_child_index_gp_inv_left n p ltac:(lia) H.
+      pose proof is_child_index_gp_inv_left n p ltac:(lia) H2.
       auto.
     - apply IHlist_nth_on_tree2.
       unfold not; intros.
-      pose proof is_child_index_gp_inv_right n p ltac:(lia) H.
+      pose proof is_child_index_gp_inv_right n p ltac:(lia) H2.
       auto.
 Qed.
 
@@ -544,7 +544,7 @@ Lemma list_nth_on_tree_inj: forall (l: list Z) (n: Z) (t1 t2: tree),
 Proof.
   intros; revert H0; revert t2.
   induction H; intros.
-  + inversion H1; subst; auto; lia.
+  + inversion H0; subst; auto.
   + inversion H4; subst.
     - lia.
     - specialize (IHlist_nth_on_tree1 _ H8).
