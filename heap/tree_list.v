@@ -60,6 +60,8 @@ Inductive complete_tree_push (dep: Z): tree -> Prop :=
       complete_tree_push (dep - 1) ls -> full_tree (dep - 2) rs ->
       complete_tree_push dep (Node v ls rs).
 
+
+
 Lemma full_tree_complete_tree: forall dep t,
   full_tree dep t -> complete_tree dep t.
 Proof.
@@ -98,7 +100,7 @@ Fixpoint partial_tree_size (pt: partial_tree): Z :=
 
 Definition list_on_tree (l: list Z) (tr: tree): Prop :=
   list_nth_on_tree l 1 tr /\ tree_size tr = Zlength l - 1 /\
-  exists d, complete_tree d tr. 
+  exists d, complete_tree_push d tr. 
 
 Lemma tree_size_nonneg: forall t,
   0 <= (tree_size t).
