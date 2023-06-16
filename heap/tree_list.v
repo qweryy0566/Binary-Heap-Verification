@@ -4,6 +4,7 @@ Require Import Notations Logic Datatypes.
 From Coq Require Import String List ZArith. 
 From compcert Require Import Coqlib Integers Floats AST Ctypes Cop Clight Clightdefs.
 Require Import Coq.Logic.Classical_Pred_Type.
+Require Import Coq.Logic.Classical_Prop.
 
 Require Import Coq.micromega.Psatz.
 Local Open Scope string.
@@ -42,12 +43,20 @@ Inductive full_tree (dep: Z): tree -> Prop :=
       full_tree (dep - 1) ls -> full_tree (dep - 1) rs ->
       full_tree dep (Node v ls rs).
 
+Fixpoint full_tree_b (dep: Z) (t : tree): bool :=
+  match t with
+  | Leaf => dep =? 0
+  | Node v ls rs => 
+      full_tree_b (dep - 1) ls && full_tree_b (dep - 1) rs
+  end.
+
+
 Inductive complete_tree_pop (dep: Z): tree -> Prop :=
   | complete_tree_pop_Leaf: dep = 0 -> complete_tree_pop dep Leaf
-  | complete_tree_pop_left_hull: forall v ls rs,
+  | complete_tree_pop_left_hole: forall v ls rs,
       complete_tree_pop (dep - 1) ls -> full_tree (dep - 2) rs ->
       complete_tree_pop dep (Node v ls rs)
-  | complete_tree_pop_right_hull: forall v ls rs,
+  | complete_tree_pop_right_hole: forall v ls rs,
       full_tree (dep - 1) ls -> complete_tree_pop (dep - 1) rs ->
       complete_tree_pop dep (Node v ls rs).
 
@@ -60,16 +69,104 @@ Inductive complete_tree_push (dep: Z): tree -> Prop :=
       complete_tree_push (dep - 1) ls -> full_tree (dep - 2) rs ->
       complete_tree_push dep (Node v ls rs).
 
-
-
-Lemma full_tree_complete_tree: forall dep t,
-  full_tree dep t -> complete_tree dep t.
+Lemma full_tree_complete_tree_pop: forall dep t,
+  full_tree dep t -> complete_tree_pop dep t.
 Proof.
   intros.
   induction H.
-  + apply complete_tree_Leaf; auto.
-  + apply complete_tree_right_hull; auto.
+  + apply complete_tree_pop_Leaf; auto.
+  + apply complete_tree_pop_right_hole; auto.
 Qed.
+
+Lemma full_tree_complete_tree_push: forall dep t,
+  full_tree dep t -> complete_tree_push (dep + 1) t.
+Proof.
+  intros.
+  induction H.
+  + apply complete_tree_push_Leaf; lia.
+  + apply complete_tree_push_right_full.
+    - replace (dep + 1 - 1) with (dep - 1 + 1) by lia; auto.
+    - replace (dep + 1 - 2) with (dep - 1) by lia; auto. 
+Qed.
+
+Lemma not_full_tree_complete_tree_imp_pop: forall dep t,
+  ~ full_tree (dep - 1) t ->
+  complete_tree_push dep t -> complete_tree_pop dep t.
+Proof.
+  intros.
+  revert H; induction H0; intros.
+  + pose proof full_tree_Leaf (dep - 1) ltac:(lia).
+    contradiction.
+  + destruct (classic (full_tree (dep - 2) rs)).
+    - pose proof full_tree_complete_tree_pop _ _ H.
+      apply complete_tree_pop_left_hole; auto.
+    - replace (dep - 1 - 1) with (dep - 2) in IHcomplete_tree_push by lia.
+      specialize (IHcomplete_tree_push H2).
+      apply complete_tree_pop_right_hole; auto.
+  + destruct (classic (full_tree (dep - 2) ls)).
+    - replace (dep - 2) with ((dep - 1) - 1) in H by lia.
+      replace (dep - 2) with ((dep - 1) - 1) in H2 by lia.
+      pose proof full_tree_Node _ v ls rs H2 H; contradiction.
+    - replace (dep - 1 - 1) with (dep - 2) in IHcomplete_tree_push by lia.
+      specialize (IHcomplete_tree_push H2).
+      apply complete_tree_pop_left_hole; auto.
+Qed.
+
+Lemma not_full_tree_complete_tree_imp_push: forall dep t,
+  ~ full_tree dep t ->
+  complete_tree_pop dep t -> complete_tree_push dep t.
+Proof.
+  intros.
+  revert H; induction H0; intros.
+  + pose proof full_tree_Leaf dep ltac:(lia).
+    contradiction.
+  + destruct (classic (full_tree (dep - 1) ls)).
+    - pose proof full_tree_complete_tree_push _ _ H.
+      apply complete_tree_push_left_full; auto.
+      replace (dep - 2 + 1) with (dep - 1) in H3 by lia; auto.
+    - specialize (IHcomplete_tree_pop H2).
+      apply complete_tree_push_right_full; auto.
+  + destruct (classic (full_tree (dep - 1) rs)).
+    - pose proof full_tree_Node _ v ls rs H H2; contradiction.
+    - specialize (IHcomplete_tree_pop H2).
+      apply complete_tree_push_left_full; auto.
+Qed.
+
+Lemma complete_tree_equality: forall t,
+  (exists d, complete_tree_pop d t) <-> (exists d, complete_tree_push d t).
+Proof.
+  intros; split; intros; destruct H as [d H].
+  + destruct (classic (full_tree d t)).
+    - exists (d + 1).
+      apply full_tree_complete_tree_push; auto.
+    - exists d.
+      apply not_full_tree_complete_tree_imp_push; auto.
+  + destruct (classic (full_tree (d - 1) t)).
+    - exists (d - 1).
+      apply full_tree_complete_tree_pop; auto.
+    - exists d.
+      apply not_full_tree_complete_tree_imp_pop; auto.   
+Qed.
+
+Fixpoint last_index (d: Z) (rt_n: Z) (tr: tree): Z :=
+  match tr with
+    | Leaf => rt_n / 2
+    | Node v ls rs =>
+      if (full_tree_b (d - 1) ls) then
+        last_index (d - 1) (rt_n * 2 + 1) rs
+      else
+        last_index (d - 1) (rt_n * 2) ls
+  end.
+
+Fixpoint next_index (d: Z) (rt_n: Z) (tr: tree): Z :=
+  match tr with
+    | Leaf => rt_n
+    | Node v ls rs =>
+      if (full_tree_b (d - 2) rs) then
+        next_index (d - 1) (rt_n * 2) ls
+      else
+        next_index (d - 1) (rt_n * 2 + 1) rs
+  end.
 
 Definition partial_tree: Type := list (bool * Z * tree).
 (* true:right_son is cut
@@ -225,6 +322,57 @@ Ltac try_unfold_tree :=
   unfold swap_down_left; unfold left_son_check_tree; 
   unfold swap_down_right; unfold right_son_check_tree;
   unfold get_tree_val; unfold legal_tree_state; simpl.
+
+Lemma tree_compose_append: forall pt t flg v ch,
+  tree_compose (pt ++ [(flg, v, ch)]) t = 
+  if (flg) then
+    Node v ch (tree_compose pt t)
+  else
+    Node v (tree_compose pt t) ch.
+Proof.
+  intros pt.
+  induction pt.
+  + simpl. reflexivity.
+  + intros; simpl; simpl in IHpt.
+    destruct a as [[flg' v'] ch'].
+    destruct flg', flg; simpl.
+    - specialize (IHpt (Node v' ch' t) true v ch).
+      simpl in IHpt. rewrite IHpt. reflexivity.
+    - specialize (IHpt (Node v' ch' t) false v ch).
+      simpl in IHpt. rewrite IHpt. reflexivity.
+    - specialize (IHpt (Node v' t ch') true v ch).
+      simpl in IHpt. rewrite IHpt. reflexivity.
+    - specialize (IHpt (Node v' t ch') false v ch).
+      simpl in IHpt. rewrite IHpt. reflexivity.  
+Qed.
+
+Lemma tree_push_decompose_sound: forall d t v,
+  complete_tree_push d t ->
+  exists pt, t = tree_compose pt Leaf /\ complete_tree_pop d (tree_compose pt (Node v Leaf Leaf)).
+Proof.
+  intros.
+  induction H.
+  + exists nil.
+    simpl.
+    split; [tauto |].
+    apply complete_tree_pop_right_hole.
+    - apply full_tree_Leaf; lia.
+    - apply complete_tree_pop_Leaf; lia. 
+  + destruct IHcomplete_tree_push as [pt [? ?]].
+    exists (pt ++ [(true, v0, ls)]); split.
+    - rewrite tree_compose_append, H1.
+      reflexivity.
+    - rewrite tree_compose_append. 
+      apply complete_tree_pop_right_hole; tauto.
+  + destruct IHcomplete_tree_push as [pt [? ?]].
+    exists (pt ++ [(false, v0, rs)]); split.
+    - rewrite tree_compose_append, H1.
+      reflexivity.
+    - rewrite tree_compose_append. 
+      apply complete_tree_pop_left_hole; tauto. 
+Qed.
+
+
 
 (* Fixpoint MaxHeap(t: tree): Prop :=
   match t with 
@@ -536,6 +684,8 @@ Proof.
       auto.  
 Qed.
 
+
+
 (* Fixpoint list_on_tree_state_fix(l: list Z) (ind: Z) (lt: partial_tree) (t: tree): Prop :=
   (list_nth_on_tree l ind t ) /\ 
   match lt with
@@ -545,8 +695,58 @@ Qed.
   end. *)
 
 Definition list_on_tree_state_fix(l: list Z) (p: Z) (lt: partial_tree) (t: tree): Prop :=
-  list_nth_on_tree l p t /\ list_on_partial_tree l p lt.
+  list_nth_on_tree l p t /\ list_on_partial_tree l p lt /\ tree_size (tree_compose lt t) = Zlength l - 1 /\ exists d, complete_tree_push d (tree_compose lt t).
 
+Lemma nil_rev_nil: forall {A: Type} (l: list A),
+  nil = rev l -> l = nil.
+Proof.
+  intros.
+  destruct l; auto.
+  simpl in H.
+  assert (rev (rev l ++ [a]) = rev []%list) by (rewrite <- H; tauto).
+  simpl in H0.
+  rewrite rev_unit in H0.
+  discriminate.
+Qed.
+
+Lemma list_on_tree_state_compose: forall l p lt t,
+  list_on_tree_state_fix l p lt t -> list_on_tree l (tree_compose lt t).
+Proof.
+  intros.
+  unfold list_on_tree_state_fix in H.
+  destruct H as [? [? [? [? ?] ] ] ].
+  unfold list_on_tree.
+  split. {
+    induction H0.
+    + subst; auto.
+    + give_up. 
+  }
+  give_up.
+Admitted.
+
+Fixpoint tree_app (d: Z) (tr: tree) (v: Z): tree :=
+  match tr with
+    | Leaf => Node v Leaf Leaf
+    | Node v ls rs =>
+      if (full_tree_b (d - 2) rs) then
+        Node v (tree_app (d - 1) ls v) rs
+      else
+        Node v ls (tree_app (d - 1) rs v)
+  end.
+
+Lemma list_on_tree_app: forall l v tr d,
+  list_on_tree l tr ->
+  complete_tree_push d tr ->
+  exists pt, tr = tree_compose pt Leaf /\ complete_tree_pop d (tree_compose pt (Node v Leaf Leaf)) /\ list_on_tree_state_fix (l ++ [v]) (next_index d 1 tr) pt (Node v Leaf Leaf). 
+Proof.
+  intros.
+  unfold list_on_tree in H.
+  destruct H as [? [? [? ?]] ].
+  exists d.
+
+Qed.
+
+(*
 Definition list_on_tree_state(l: list_state) (t: tree_state): Prop :=
   list_on_tree_state_fix (fst l) (snd l) (fst t) (snd t).
 
@@ -1148,7 +1348,10 @@ Lemma list_on_tree_state_app: forall (l: list Z) (t: tree) (v: Z),
   list_on_tree l t -> list_on_tree_state (l++[v], Zlength l) (tree_to_partial_tree t,Node v Leaf Leaf).
 Proof.
   intros.
-Admitted.
+Admitted. *)
+
+Lemma list_on_tree_state_app: forall l t v,
+  list_on_tree l t ->
 
 Definition tree_push: tree -> Z -> tree -> Prop :=
   fun t val t' =>
