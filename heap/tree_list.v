@@ -42,14 +42,23 @@ Inductive full_tree (dep: Z): tree -> Prop :=
       full_tree (dep - 1) ls -> full_tree (dep - 1) rs ->
       full_tree dep (Node v ls rs).
 
-Inductive complete_tree (dep: Z): tree -> Prop :=
-  | complete_tree_Leaf: dep = 0 -> complete_tree dep Leaf
-  | complete_tree_left_hull: forall v ls rs,
-      complete_tree (dep - 1) ls -> full_tree (dep - 2) rs ->
-      complete_tree dep (Node v ls rs)
-  | complete_tree_right_hull: forall v ls rs,
-      full_tree (dep - 1) ls -> complete_tree (dep - 1) rs ->
-      complete_tree dep (Node v ls rs).
+Inductive complete_tree_pop (dep: Z): tree -> Prop :=
+  | complete_tree_pop_Leaf: dep = 0 -> complete_tree_pop dep Leaf
+  | complete_tree_pop_left_hull: forall v ls rs,
+      complete_tree_pop (dep - 1) ls -> full_tree (dep - 2) rs ->
+      complete_tree_pop dep (Node v ls rs)
+  | complete_tree_pop_right_hull: forall v ls rs,
+      full_tree (dep - 1) ls -> complete_tree_pop (dep - 1) rs ->
+      complete_tree_pop dep (Node v ls rs).
+
+Inductive complete_tree_push (dep: Z): tree -> Prop :=
+  | complete_tree_push_Leaf: dep = 1 -> complete_tree_push dep Leaf
+  | complete_tree_push_left_full: forall v ls rs,
+      full_tree (dep - 1) ls -> complete_tree_push (dep - 1) rs ->
+      complete_tree_push dep (Node v ls rs)
+  | complete_tree_push_right_full: forall v ls rs,
+      complete_tree_push (dep - 1) ls -> full_tree (dep - 2) rs ->
+      complete_tree_push dep (Node v ls rs).
 
 Lemma full_tree_complete_tree: forall dep t,
   full_tree dep t -> complete_tree dep t.
@@ -538,19 +547,6 @@ Definition list_on_tree_state_fix(l: list Z) (p: Z) (lt: partial_tree) (t: tree)
 
 Definition list_on_tree_state(l: list_state) (t: tree_state): Prop :=
   list_on_tree_state_fix (fst l) (snd l) (fst t) (snd t).
-
-Lemma list_nth_on_tree_inj: forall (l: list Z) (n: Z) (t1 t2: tree),
-  list_nth_on_tree l n t1 -> list_nth_on_tree l n t2 -> t1 = t2.
-Proof.
-  intros; revert H0; revert t2.
-  induction H; intros.
-  + inversion H0; subst; auto.
-  + inversion H4; subst.
-    - lia.
-    - specialize (IHlist_nth_on_tree1 _ H8).
-      specialize (IHlist_nth_on_tree2 _ H9).
-      subst; auto. 
-Qed.
 
 Lemma list_on_tree_inj: forall (l: list Z) (t1 t2: tree),
   list_on_tree l t1 -> list_on_tree l t2 -> t1 = t2.
