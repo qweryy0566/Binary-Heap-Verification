@@ -77,27 +77,112 @@ Proof.
   }
 Qed.
 
-Fixpoint tree_next_log (d: Z) (tr: tree): Z :=
+Lemma full_tree_equiv1: forall d t,
+  full_tree d t <-> full_tree_b d t = true.
+Proof.
+  intros.
+  split; intros.
+  + induction H; subst; simpl.
+    - reflexivity.
+    - rewrite IHfull_tree1, IHfull_tree2; reflexivity.
+  + revert d H.
+    induction t; simpl; intros.
+    - apply Z.eqb_eq in H; subst.
+      constructor; reflexivity.
+    - apply andb_prop in H; destruct H.
+      specialize (IHt1 _ H).
+      specialize (IHt2 _ H0).
+      constructor; auto.
+Qed.
+
+Lemma complete_tree_push_not_fullb: forall d t,
+  complete_tree_push d t ->
+  full_tree_b d t = false.
+Proof.
+  intros.
+  induction H; subst; simpl.
+  + reflexivity.
+  + apply andb_false_intro2; assumption.
+  + apply andb_false_intro1; assumption.
+Qed.
+
+Lemma full_tree_b_dep_restrict: forall t d,
+  full_tree_b d t = true -> full_tree_b (d + 1) t = false.
+Proof.
+  intros t.
+  induction t; simpl; intros.
+  + rewrite Z.eqb_neq.
+    rewrite Z.eqb_eq in H.
+    lia.
+  + apply andb_prop in H; destruct H.
+    specialize (IHt1 _ H).
+    replace (d - 1 + 1) with (d + 1 - 1) in IHt1 by lia.
+    apply andb_false_intro1; assumption. 
+Qed.
+
+Fixpoint tree_next_pow2 (d: Z) (tr: tree): Z :=
   match tr with
   | Leaf => 1
   | Node v ls rs => 
-    if full_tree_b (d - 2) rs then
-      2 * tree_next_log (d - 1) ls
+    if full_tree_b (d - 1) ls then
+      2 * tree_next_pow2 (d - 1) rs
     else
-      2 * tree_next_log (d - 1) rs
+      2 * tree_next_pow2 (d - 1) ls
   end.
+
+Lemma full_tree_nonneg: forall d t,
+  full_tree d t -> 0 <= d.
+Proof.
+  intros.
+  induction H; lia.
+Qed.
+
+Lemma full_tree_same_size: forall d t1 t2,
+  full_tree d t1 -> full_tree d t2 -> tree_size t1 = tree_size t2.
+Proof.
+  intros.
+  revert t2 H0.
+  induction H; intros.
+  + inversion H0; [reflexivity | ]. 
+    pose proof full_tree_nonneg _ _ H1; lia.
+  + inversion H1; subst.
+    - pose proof full_tree_nonneg _ _ H; lia.
+    - simpl.
+      rewrite (IHfull_tree1 _ H2).
+      rewrite (IHfull_tree2 _ H3).
+      reflexivity.  
+Qed.
+
+Lemma full_tree_next_pow2: forall d t,
+  full_tree d t ->
+  tree_next_pow2 (d + 1) t = tree_size t + 1.
+Proof.
+  intros.
+  induction H; simpl. 
+  + lia.
+  + replace (dep + 1 - 1) with dep by lia.
+    remember H as H'; clear HeqH'.
+    rewrite full_tree_equiv1 in H.
+    apply full_tree_b_dep_restrict in H.
+    replace (dep - 1 + 1) with dep in H by lia.
+    rewrite H; simpl.
+    replace (dep - 1 + 1) with dep in IHfull_tree1 by lia.
+    rewrite IHfull_tree1.
+    rewrite (full_tree_same_size _ _ _ H' H0).
+    lia.
+Qed.
 
 Lemma next_index_lowbit: forall n d t,
   complete_tree_push d t ->
-  next_index d n t = n * (tree_next_log d t) + next_index d 0 t.
+  next_index d n t = n * (tree_next_pow2 d t) + next_index d 0 t.
 Proof.
   intros.
   revert d n H.
   induction t; simpl; intros.
   + lia.
   + inversion H; subst v t1 t2.
-    - assert (full_tree_b (d - 1) ls = true) by admit.
-      rewrite H0; simpl.   
+    - rewrite full_tree_equiv1 in H2.
+      rewrite H2; simpl.   
       specialize (IHt2 (d - 1)).
       remember IHt2 as IHt2'; clear HeqIHt2'.
       specialize (IHt2' 1 H4).
@@ -105,12 +190,70 @@ Proof.
       specialize (IHt2 (n * 2 + 1) H4).
       rewrite IHt2.
       lia. 
-    - assert (full_tree_b (d - 2) rs = true) by admit.
+    - pose proof complete_tree_push_not_fullb _ _ H2.
       rewrite H0; simpl.   
       specialize (IHt1 (d - 1) (n * 2) H2).
       rewrite IHt1.
       lia. 
-Admitted.
+Qed.
+
+Lemma complete_tree_push_dep_positve: forall d t,
+  complete_tree_push d t -> 1 <= d.
+Proof.
+  intros.
+  induction H; lia.
+Qed.
+
+Lemma complete_tree_push_same_next_pow2: forall d t1 t2,
+  complete_tree_push d t1 -> complete_tree_push d t2 ->
+  tree_next_pow2 d t1 = tree_next_pow2 d t2.
+Proof.
+  intros.
+  revert t2 H0.
+  induction H; subst; simpl; intros.
+  + inversion H0; subst; simpl.
+    - reflexivity.
+    - pose proof complete_tree_push_dep_positve _ _ H1; lia.
+    - pose proof complete_tree_push_dep_positve _ _ H; lia.
+  + rewrite full_tree_equiv1 in H.
+    rewrite H; simpl.
+    inversion H1; subst; simpl.
+    - pose proof complete_tree_push_dep_positve _ _ H0; lia.
+    - rewrite full_tree_equiv1 in H2.
+      rewrite H2; simpl.
+      specialize (IHcomplete_tree_push _ H3).
+      lia.
+    - pose proof complete_tree_push_not_fullb _ _ H2.
+      rewrite H4; simpl.
+      specialize (IHcomplete_tree_push _ H2).
+      lia.
+  + pose proof complete_tree_push_not_fullb _ _ H.
+    rewrite H2; simpl.
+    inversion H1; subst; simpl.
+    - pose proof complete_tree_push_dep_positve _ _ H; lia.
+    - rewrite full_tree_equiv1 in H3. 
+      rewrite H3; simpl.
+      specialize (IHcomplete_tree_push _ H4).
+      lia.
+    - pose proof complete_tree_push_not_fullb _ _ H3.
+      rewrite H5; simpl.
+      specialize (IHcomplete_tree_push _ H3).
+      lia. 
+Qed.
+
+Lemma full_tree_next_index: forall d t, 
+  full_tree d t -> next_index (d + 1) 0 t = 0.
+Proof.
+  intros.
+  induction H; subst; simpl; auto.
+  replace (dep + 1 - 1) with dep by lia.
+  rewrite full_tree_equiv1 in H.
+  pose proof full_tree_b_dep_restrict _ _ H.
+  replace (dep - 1 + 1) with dep in H1 by lia.
+  rewrite H1; simpl.
+  replace (dep - 1 + 1) with dep in IHfull_tree1 by lia.
+  tauto.
+Qed.
   
 Lemma complete_tree_next_index: forall d t,
   complete_tree_push d t ->
@@ -118,18 +261,41 @@ Lemma complete_tree_next_index: forall d t,
 Proof.
   intros.
   revert d H.
-  induction t; simpl; intros.
-  2: {
-    inversion H; subst v t1 t2.
-    + assert (full_tree_b (d - 2) rs = false) by admit.
-      rewrite H0; simpl.
-      specialize (IHt2 (d - 1) H4).
-      rewrite IHt2.
-      lia.  
-  }  
+  induction t; simpl; intros; [lia |].
+  inversion H; subst v t1 t2.
+  + remember H2 as H2'; clear HeqH2'.
+    rewrite full_tree_equiv1 in H2'.
+    rewrite H2'; simpl.
+    specialize (IHt2 (d - 1) H4).
+    rewrite next_index_lowbit by auto.
+    rewrite next_index_lowbit in IHt2 by auto.
+    pose proof full_tree_complete_tree_push _ _ H2.
+    replace (d - 1 + 1) with d in H0 by lia.
+    specialize (IHt1 d H0).
+    rewrite next_index_lowbit in IHt1 by auto.
+    pose proof full_tree_next_pow2 _ _ H2.
+    replace (d - 1 + 1) with d in H1 by lia.
+    pose proof complete_tree_push_same_next_pow2 _ _ _ H0 H.
+    simpl in H3; rewrite H2' in H3.
+    lia.
+  + pose proof complete_tree_push_not_fullb _ _ H2.
+    rewrite H0; simpl.
+    specialize (IHt1 (d - 1) H2).
+    rewrite next_index_lowbit by auto.
+    rewrite next_index_lowbit in IHt1 by auto.
+    pose proof full_tree_complete_tree_push _ _ H4.
+    replace (d - 2 + 1) with (d - 1) in H1 by lia.
+    specialize (IHt2 (d - 1) H1).
+    rewrite next_index_lowbit in IHt2 by auto.
+    pose proof full_tree_next_pow2 _ _ H4.
+    replace (d - 1 + 1) with d in H3 by lia.
+    pose proof complete_tree_push_same_next_pow2 _ _ _ H1 H2.
+    pose proof full_tree_next_index _ _ H4.
+    replace (d - 2 + 1) with (d - 1) in H6 by lia.
+    lia.     
 Qed.
 
-Lemma list_on_tree_decompose: forall l n d t,
+(* Lemma list_on_tree_compose: forall l n d t,
   list_nth_on_tree l n t ->
   complete_tree_push d t ->
   exists pt, t = tree_compose pt Leaf /\
@@ -182,7 +348,7 @@ Proof.
   destruct H0 as [? [? [d ?]]].
   unfold list_on_tree_state; simpl.
   unfold list_on_tree_state_fix.
-  pose proof tree_push_decompose_sound _ _ v H2.
+  pose proof tree_push_trompose_sound _ _ v H2.
   destruct H3 as [pt [? ?] ].
   exists pt.
   split.
@@ -196,4 +362,4 @@ Proof.
     - constructor.
     - constructor.
   +      
-Qed.
+Qed. *)
