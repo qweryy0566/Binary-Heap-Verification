@@ -450,7 +450,7 @@ Proof.
     - apply IHlt; tauto.
 Qed.
 
-Lemma list_on_tree_state_app2: forall (l: list Z) (t: tree) (lt: partial_tree) (v n  d: Z), 
+Lemma list_on_tree_state_app2: forall (l: list Z) (t: tree) (lt: partial_tree) (v n d: Z), 
   list_on_tree_state (l,n) (lt,t) -> complete_tree_push d t ->
   list_on_partial_tree (l++[v]) (next_index d n t) (tree_to_partial_tree_fix lt t d).
 Proof.
@@ -633,7 +633,7 @@ Qed.
 Definition tree_push: tree -> Z -> tree -> Prop :=
   fun t val t' =>
     exists ts d d2, heap_tree_up ((tree_to_partial_tree t d), Node val Leaf Leaf) ts /\ complete_tree_push d t /\ t' = (tree_compose (fst ts) (snd ts)) /\ complete_tree_push d2 t'.
-
+ 
 Lemma tree_to_partial_tree_fix_hold: forall (lt: partial_tree) (t: tree) (d: Z),
   MaxHeap_partial_tree lt -> MaxHeap t -> (t = Leaf \/ MaxHeap_partial_tree_v lt (get_tree_val t)) -> complete_tree_push d t -> MaxHeap_partial_tree (tree_to_partial_tree_fix lt t d).
 Proof.

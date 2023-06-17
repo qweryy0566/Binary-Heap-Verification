@@ -133,6 +133,16 @@ Proof.
       apply complete_tree_push_left_full; auto.
 Qed.
 
+Lemma complete_tree_pop_not_fullb: forall d t,
+  complete_tree_pop d t -> full_tree_b (d - 1) t = false.
+Proof.
+  intros.
+  induction H; subst; simpl.
+  + reflexivity.
+  + apply andb_false_intro1; auto.
+  + apply andb_false_intro2; auto.
+Qed.
+
 Lemma complete_tree_equality: forall t,
   (exists d, complete_tree_pop d t) <-> (exists d, complete_tree_push d t).
 Proof.

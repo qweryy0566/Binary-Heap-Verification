@@ -26,7 +26,7 @@ Definition tree_up_succeed:
     (t3::l' = (fst t1)) /\ (l' = (fst t2)) /\
     (exists v ls rs, (swap_up_and_combine v ls rs t3) = (snd t2) /\ (snd t1) = (Node v ls rs)) /\ 
     ((get_tree_val (snd t1)) > (snd (fst t3))).
-
+ 
 Definition tree_up_fail:
   tree_state -> tree_state -> Prop:=
     Rels.test(fun t => 
