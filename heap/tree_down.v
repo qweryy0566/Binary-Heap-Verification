@@ -46,19 +46,18 @@ Definition MaxHeap_tree_down(ts: tree_state): Prop :=
   (ls = Leaf \/ MaxHeap_partial_tree_v (fst ts) (get_tree_val ls)) /\
   (rs = Leaf \/ MaxHeap_partial_tree_v (fst ts) (get_tree_val rs))).
 
-Lemma left_son_check_equal: forall l n v ls rs,
+(* Lemma left_son_check_equal: forall l n v ls rs,
   list_nth_on_tree l n (Node v ls rs) ->
   left_son_check_list (l, n) <-> left_son_check_tree v ls rs.
 Proof.
   intros.
-  inversion H; [discriminate | ].
-  inversion H0; subst.
+  inversion H; subst.
   split; intros.
-  + unfold left_son_check_list in H2.
-    unfold left_son in H2; simpl in H2.
-    destruct H2 as [? ?].
-    unfold legal_list_state in H2; simpl in H2.
-    inversion H3; [lia | subst].
+  + unfold left_son_check_list in H0.
+    unfold left_son in H0; simpl in H0.
+    destruct H0 as [? ?].
+    unfold legal_list_state in H0; simpl in H0.
+    unfold get_list_val in H1.
     unfold left_son_check_tree; split.
     - unfold not; intros.
       discriminate.
@@ -106,7 +105,7 @@ Proof.
       unfold get_tree_val in H5.
       replace (n * 2) with (2 * n) in H5 by lia.
       lia.
-Qed.
+Qed. *)
 
 Lemma converse_neg: forall (P Q: Prop),
   (P -> Q) -> (~ Q -> ~ P).
@@ -125,14 +124,12 @@ Proof.
   intros.
   unfold list_on_tree_state in H.
   unfold list_on_tree_state_fix in H.
-  simpl in H; destruct H as [? ?].
+  simpl in H; destruct H as [? [? [? ?] ]].
   subst.
   unfold left_son_swap in H0; simpl in H0.
   destruct H0; subst.
-  inversion H; [discriminate | ].
-  inversion H1; subst v1 ls rs1.
-  inversion H5; [discriminate | ].
-  inversion H4; subst v1 ls rs1.
+  inversion H.
+  inversion H9; subst v1 ls rs1.
   pose proof list_swap_rela_rewrite l l' n (2 * n) ltac:(lia) ltac:(lia) H0.
   subst l'.
   assert (Zlength (list_swap l n (2 * n)) = Zlength l). {
@@ -146,12 +143,12 @@ Proof.
   }
   unfold list_on_tree_state.
   unfold list_on_tree_state_fix.
-  simpl; split.
+  simpl; split; [ | split; [ | split]].
   + eapply list_nth_on_tree_Node; eauto.
     - lia.
     - unfold list_swap.
       rewrite upd_Znth_diff by lia.
-      rewrite upd_Znth_same by lia; reflexivity.
+      rewrite upd_Znth_same by lia; auto.
     - unfold list_swap.
       apply list_nth_on_tree_upd; [ | lia | ].
       * apply list_nth_on_tree_upd; [ | lia | ].
@@ -165,11 +162,14 @@ Proof.
         ++ apply less_is_not_child_index; lia.
       * apply less_is_not_child_index; lia.
   + eapply cons_partial_tree; eauto; simpl.
-    - lia.
+    - rewrite H1.
+      replace (2 * n) with (n * 2) by lia.
+      rewrite Z.div_mul by lia.
+      lia.
     - replace (2 * n) with (n * 2) by lia; rewrite Z.div_mul by lia; lia.
     - replace (2 * n) with (n * 2) by lia; rewrite Z.div_mul by lia.
       unfold list_swap.
-      rewrite upd_Znth_same by lia; reflexivity.
+      rewrite upd_Znth_same by lia; auto.
     - unfold list_swap.
       apply list_nth_on_tree_upd; [ | lia | ].
       * apply list_nth_on_tree_upd; [ | lia | ].
@@ -183,6 +183,18 @@ Proof.
         ++ apply is_child_index_gp_inv_left; [lia | ].
            apply is_child_index_self; reflexivity.
         ++ assumption.
+  + rewrite H1.
+    rewrite tree_compose_size.
+    rewrite tree_compose_size in H3.
+    simpl; simpl in H3.
+    lia.
+  + destruct H4 as [d].
+    exists d.
+    eapply tree_same_complete_tree; eauto.
+    apply tree_compose_same.
+    apply Node_same.
+    - apply Node_same; apply tree_same_rel; auto.
+    - apply tree_same_rel; auto.
 Qed.
 
 Lemma swap_down_right_hold: forall l n l' n' pt v ls rs v0 ls0 rs0,
@@ -194,14 +206,12 @@ Proof.
   intros.
   unfold list_on_tree_state in H.
   unfold list_on_tree_state_fix in H.
-  simpl in H; destruct H as [? ?].
+  simpl in H; destruct H as [? [? [? ?]]].
   subst.
   unfold right_son_swap in H0; simpl in H0.
   destruct H0; subst.
-  inversion H; [discriminate | ].
-  inversion H1; subst v1 ls1 rs.
-  inversion H6; [discriminate | ].
-  inversion H4; subst v1 ls1 rs.
+  inversion H.
+  inversion H10; subst v1 ls1 rs.
   pose proof list_swap_rela_rewrite l l' n (2 * n + 1) ltac:(lia) ltac:(lia) H0.
   subst l'.
   assert (Zlength (list_swap l n (2 * n + 1)) = Zlength l). {
@@ -215,12 +225,12 @@ Proof.
   }
   unfold list_on_tree_state.
   unfold list_on_tree_state_fix.
-  simpl; split.
+  simpl; split; [ | split; [ | split]].
   + eapply list_nth_on_tree_Node; eauto.
     - lia.
     - unfold list_swap.
       rewrite upd_Znth_diff by lia.
-      rewrite upd_Znth_same by lia; reflexivity.
+      rewrite upd_Znth_same by lia; auto.
     - unfold list_swap.
       apply list_nth_on_tree_upd; [ | lia | ].
       * apply list_nth_on_tree_upd; [ | lia | ].
@@ -239,11 +249,13 @@ Proof.
       lia.
     }
     eapply cons_partial_tree; eauto; simpl.
-    - lia.
+    - rewrite H1.
+      replace (2 * n) with (n * 2) by lia.
+      lia.
     - replace (2 * n) with (n * 2) by lia; lia.
-    - replace (2 * n) with (n * 2) by lia. rewrite H15.
+    - replace (2 * n) with (n * 2) by lia. rewrite H18.
       unfold list_swap.
-      rewrite upd_Znth_same by lia; reflexivity.
+      rewrite upd_Znth_same by lia; auto.
     - unfold list_swap.
       apply list_nth_on_tree_upd; [ | lia | ].
       * apply list_nth_on_tree_upd; [ | lia | ].
@@ -251,13 +263,25 @@ Proof.
         ++ apply rchild_is_not_lchild with (pp := n); try lia.
            apply is_child_index_self; lia.
       * apply less_is_not_child_index; lia.
-    - replace (2 * n) with (n * 2) by lia; rewrite H15.
+    - replace (2 * n) with (n * 2) by lia; rewrite H18.
       apply list_on_partial_tree_upd; try lia.
       * apply is_child_index_self; reflexivity.
       * apply list_on_partial_tree_upd; try lia.
         ++ apply is_child_index_gp_inv_right; [lia | ].
            apply is_child_index_self; reflexivity.
         ++ assumption.
+  + rewrite H1.
+    rewrite tree_compose_size.
+    rewrite tree_compose_size in H3.
+    simpl; simpl in H3.
+    lia.
+  + destruct H4 as [d].
+    exists d.
+    eapply tree_same_complete_tree; eauto.
+    apply tree_compose_same.
+    apply Node_same.
+    - apply tree_same_rel; auto.
+    - apply Node_same; apply tree_same_rel; auto.
 Qed.
 
 Lemma MaxHeap_no_rt_impl_lchild: forall v ls rs,
@@ -429,9 +453,10 @@ Proof.
   remember H as H'; clear HeqH'.
   unfold list_on_tree_state in H.
   unfold list_on_tree_state_fix in H.
-  simpl in H; destruct H as [? ?].
-  inversion H; [discriminate | ].
-  inversion H6; subst v0 ls0 rs0.
+  simpl in H; destruct H as [? [? [? ?]]].
+  inversion H.
+  (* inversion H6;  *)
+  subst v0 ls0 rs0.
   destruct H0; [ | destruct H0].
   {
     destruct H0 as [? [? ?] ].

@@ -51,7 +51,6 @@ Fixpoint full_tree_b (dep: Z) (t : tree): bool :=
       full_tree_b (dep - 1) ls && full_tree_b (dep - 1) rs
   end.
 
-
 Inductive complete_tree_pop (dep: Z): tree -> Prop :=
   | complete_tree_pop_Leaf: dep = 0 -> complete_tree_pop dep Leaf
   | complete_tree_pop_left_hole: forall v ls rs,
@@ -307,6 +306,17 @@ Fixpoint partial_tree_size (pt: partial_tree): Z :=
     | nil => 0
     | (fl, v, t) :: pt0 => 1 + (tree_size t) + (partial_tree_size pt0)
   end.
+
+Lemma partial_tree_append_size: forall pt flg v ch,
+  partial_tree_size (pt ++ [(flg, v, ch)]) = 
+  1 + (tree_size ch) + (partial_tree_size pt).
+Proof.
+  intros pt.
+  induction pt; simpl; intros.
+  + lia.
+  + destruct a as [[flga va] ta].
+    rewrite IHpt; lia. 
+Qed.
 
 Definition list_on_tree (l: list Z) (tr: tree): Prop :=
   list_nth_on_tree l 1 tr /\ tree_size tr = Zlength l - 1 /\
@@ -704,13 +714,169 @@ Proof.
   lia.
 Qed.
 
-Lemma complete_pt_size: forall d n pt l,
-  complete_tree_push d (tree_compose pt Leaf) ->
-  list_on_partial_tree l n pt ->
-  n > tree_size (tree_compose pt Leaf).
+
+Inductive list_nth_on_partial_tree (l: list Z) (n: Z) (p: Z) (lt: partial_tree) : Prop :=
+  | nth_partial_tree_nil: p = n -> lt = nil -> list_nth_on_partial_tree l n p lt
+  | nth_partial_tree_cons: forall flg v t lt0, 
+    lt = (flg, v, t) :: lt0 ->
+    1 <= (p / 2) < Zlength l -> 
+    p = (p / 2) * 2 + (if flg then 1 else 0) ->
+    Znth (p / 2) l = v -> 
+    list_nth_on_tree l (p + (if flg then -1 else 1)) t -> 
+    list_nth_on_partial_tree l n (p / 2) lt0 -> 
+    list_nth_on_partial_tree l n p lt.
+
+Lemma list_nth_on_partial_tree_app: forall l n p lt (flg: bool) v t,
+  (if flg then
+    list_nth_on_partial_tree l (n * 2 + 1) p lt /\ list_nth_on_tree l (n * 2) t /\ Znth n l = v
+  else
+    list_nth_on_partial_tree l (n * 2) p lt /\ list_nth_on_tree l (n * 2 + 1) t /\ Znth n l = v) ->
+  1 <= n < Zlength l ->
+  list_nth_on_partial_tree l n p (lt ++ [(flg, v, t)]).
 Proof.
   intros.
-  revert d n H H0.
+  destruct flg.
+  {
+    revert l p v n t H H0.
+    induction lt; intros; simpl; destruct H as [? [? ?] ].
+    + inversion H; [ | discriminate].
+      pose proof Z.div_lt_upper_bound p 2 (n + 1) ltac:(lia) ltac:(lia).
+      pose proof Z.div_le_lower_bound p 2 n ltac:(lia) ltac:(lia).
+      eapply nth_partial_tree_cons; eauto; simpl.
+      * inversion H; [lia | discriminate].
+      * lia. 
+      * replace (p / 2) with n by lia; tauto.
+      * replace (p + -1) with (n * 2) by lia; tauto.
+      * apply nth_partial_tree_nil; [lia | tauto].
+    + destruct a as [[flga va] ta].
+      inversion H; [discriminate | ].
+      injection H3; intros; subst lt0 ta va flga.
+      eapply nth_partial_tree_cons; eauto.
+  }
+  {
+    revert l p v n t H H0.
+    induction lt; intros; simpl; destruct H as [? [? ?] ].
+    + inversion H; [ | discriminate].
+      pose proof Z.div_lt_upper_bound p 2 (n + 1) ltac:(lia) ltac:(lia).
+      pose proof Z.div_le_lower_bound p 2 n ltac:(lia) ltac:(lia).
+      eapply nth_partial_tree_cons; eauto; simpl.
+      * inversion H; [lia | discriminate].
+      * lia. 
+      * replace (p / 2) with n by lia; tauto.
+      * replace (p + 1) with (n * 2 + 1) by lia; tauto.
+      * apply nth_partial_tree_nil; [lia | tauto].
+    + destruct a as [[flga va] ta].
+      inversion H; [discriminate | ].
+      injection H3; intros; subst lt0 ta va flga.
+      eapply nth_partial_tree_cons; eauto.
+  }
+Qed.
+
+Lemma list_nth_on_partial_tree_app_inv: forall l n p lt (flg: bool) v t,
+  1 <= n < Zlength l ->
+  list_nth_on_partial_tree l n p (lt ++ [(flg, v, t)]) ->
+  (if flg then
+    list_nth_on_partial_tree l (n * 2 + 1) p lt /\ list_nth_on_tree l (n * 2) t /\ Znth n l = v
+  else
+    list_nth_on_partial_tree l (n * 2) p lt /\ list_nth_on_tree l (n * 2 + 1) t /\ Znth n l = v).
+Proof.
+  intros.
+  destruct flg.
+  {
+    revert l p v n t H H0.
+    induction lt; simpl; intros.
+    + inversion H0; subst; [discriminate | ].
+      injection H1; intros; subst.
+      inversion H6; subst; [ | discriminate].
+      split.
+      - apply nth_partial_tree_nil; [lia | tauto].
+      - replace (p / 2 * 2) with (p + -1) by lia.
+        auto.
+    + inversion H0; subst; [discriminate | ].   
+      injection H1; intros; subst.
+      split.
+      - eapply nth_partial_tree_cons; eauto.
+        specialize (IHlt _ _ _ _ _ H H6).
+        destruct IHlt.
+
+  }
+  {
+    revert l p v n t H H0.
+    induction lt; intros; simpl; destruct H as [? [? ?] ].
+    + inversion H; [ | discriminate].
+      pose proof Z.div_lt_upper_bound p 2 (n + 1) ltac:(lia) ltac:(lia).
+      pose proof Z.div_le_lower_bound p 2 n ltac:(lia) ltac:(lia).
+      eapply nth_partial_tree_cons; eauto; simpl.
+      * inversion H; [lia | discriminate].
+      * lia. 
+      * replace (p / 2) with n by lia; tauto.
+      * replace (p + 1) with (n * 2 + 1) by lia; tauto.
+      * apply nth_partial_tree_nil; [lia | tauto].
+    + destruct a as [[flga va] ta].
+      inversion H; [discriminate | ].
+      injection H3; intros; subst lt0 ta va flga.
+      eapply nth_partial_tree_cons; eauto.
+  }
+Qed.
+
+Fixpoint find_hole_index (rt_n: Z) (rev_pt: partial_tree): Z :=
+  match (rev_pt) with
+  | nil => rt_n
+  | (flg, v, t) :: lt => 
+    if flg then
+      find_hole_index (rt_n * 2 + 1) lt
+    else
+      find_hole_index (rt_n * 2) lt
+  end.
+
+Lemma find_hole_index_sound: forall l n p lt,
+  list_nth_on_partial_tree l n p lt ->
+  find_hole_index n (rev lt) = p.
+Proof.
+  intros.
+  revert l n p H.
+  replace lt with (rev (rev lt)) by (rewrite rev_involutive; auto).
+  replace (rev (rev (rev lt))) with (rev lt) by (rewrite rev_involutive; auto).
+  induction (rev lt); simpl; intros.
+  + inversion H; [lia | discriminate].
+  + destruct a as [[flg v] tr].
+    destruct flg.
+    - inversion H; [discriminate | ].
+      injection H1; intros; subst lt0 t v0 flg.
+      apply IHl in H5.
+      rewrite H5.
+      simpl.
+      replace (n * 2 + 1) with (n * 2 + 1 * 2 - 1) by lia.
+      rewrite Z.div_add_l by lia.
+      rewrite Z.div_mul by lia.
+      rewrite Z.div_small by lia.
+      reflexivity.
+    - inversion H; [discriminate | ].
+      injection H1; intros; subst lt0 t v0 flg.
+      apply IHl in H5.
+      rewrite H5.
+      simpl.
+      replace (n * 2) with (n * 2 + 1 * 2 - 1) by lia.
+      rewrite Z.div_add_l by lia.
+      rewrite Z.div_mul by lia.
+      rewrite Z.div_small by lia.
+      reflexivity.  
+Qed.
+
+Lemma complete_pt_size: forall d p pt l,
+  complete_tree_push d (tree_compose pt Leaf) ->
+  list_on_partial_tree l p pt ->
+  p > tree_size (tree_compose pt Leaf).
+Proof.
+  intros.
+  revert d p H H0.
+  replace pt with (rev (rev pt)) by (rewrite rev_involutive; auto).
+  induction (rev pt); simpl; intros.
+  + inversion H0; [lia | discriminate].
+  + destruct a as [[flg v] tr].
+    rewrite tree_compose_append.
+    destruct flg; simpl.
+    -  
   induction pt; simpl; intros.
   + inversion H0; [lia | discriminate].
   + destruct a as [[flg v] tr].
@@ -720,7 +886,7 @@ Proof.
 Admitted. 
 
 Lemma legal_list_impl_legal_tree_state: forall (l: list_state) (t: tree_state),
- list_on_tree_state l t -> legal_list_state l -> legal_tree_state t.
+  list_on_tree_state l t -> legal_list_state l -> legal_tree_state t.
 Proof.
   destruct l as [l n].
   destruct t as [pt tr].
@@ -908,7 +1074,7 @@ Proof.
   intros.
   induction H.
   + apply Leaf_same.
-  + apply Node_same; tauto.  
+  + apply Node_same; tauto.
 Qed.
 
 Definition get_snd_01(n p k: Z): bool:=
