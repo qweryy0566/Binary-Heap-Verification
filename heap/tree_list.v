@@ -714,7 +714,6 @@ Proof.
   lia.
 Qed.
 
-
 Inductive list_nth_on_partial_tree (l: list Z) (n: Z) (p: Z) (lt: partial_tree) : Prop :=
   | nth_partial_tree_nil: p = n -> lt = nil -> list_nth_on_partial_tree l n p lt
   | nth_partial_tree_cons: forall flg v t lt0, 
@@ -773,7 +772,6 @@ Proof.
 Qed.
 
 Lemma list_nth_on_partial_tree_app_inv: forall l n p lt (flg: bool) v t,
-  1 <= n < Zlength l ->
   list_nth_on_partial_tree l n p (lt ++ [(flg, v, t)]) ->
   (if flg then
     list_nth_on_partial_tree l (n * 2 + 1) p lt /\ list_nth_on_tree l (n * 2) t /\ Znth n l = v
@@ -783,40 +781,114 @@ Proof.
   intros.
   destruct flg.
   {
-    revert l p v n t H H0.
+    revert l p v n t H.
     induction lt; simpl; intros.
-    + inversion H0; subst; [discriminate | ].
-      injection H1; intros; subst.
-      inversion H6; subst; [ | discriminate].
+    + inversion H; subst; [discriminate | ].
+      injection H0; intros; subst.
+      inversion H5; subst; [ | discriminate].
       split.
       - apply nth_partial_tree_nil; [lia | tauto].
       - replace (p / 2 * 2) with (p + -1) by lia.
         auto.
-    + inversion H0; subst; [discriminate | ].   
-      injection H1; intros; subst.
+    + inversion H; subst; [discriminate | ].   
+      injection H0; intros; subst.
+      specialize (IHlt _ _ _ _ _ H5).
+      destruct IHlt.
       split.
       - eapply nth_partial_tree_cons; eauto.
-        specialize (IHlt _ _ _ _ _ H H6).
-        destruct IHlt.
-
+      - auto.
   }
   {
-    revert l p v n t H H0.
-    induction lt; intros; simpl; destruct H as [? [? ?] ].
-    + inversion H; [ | discriminate].
-      pose proof Z.div_lt_upper_bound p 2 (n + 1) ltac:(lia) ltac:(lia).
-      pose proof Z.div_le_lower_bound p 2 n ltac:(lia) ltac:(lia).
-      eapply nth_partial_tree_cons; eauto; simpl.
-      * inversion H; [lia | discriminate].
-      * lia. 
-      * replace (p / 2) with n by lia; tauto.
-      * replace (p + 1) with (n * 2 + 1) by lia; tauto.
-      * apply nth_partial_tree_nil; [lia | tauto].
-    + destruct a as [[flga va] ta].
-      inversion H; [discriminate | ].
-      injection H3; intros; subst lt0 ta va flga.
-      eapply nth_partial_tree_cons; eauto.
+    revert l p v n t H.
+    induction lt; simpl; intros.
+    + inversion H; subst; [discriminate | ].
+      injection H0; intros; subst.
+      inversion H5; subst; [ | discriminate].
+      split.
+      - apply nth_partial_tree_nil; [lia | tauto].
+      - replace (p / 2 * 2) with p by lia.
+        auto.
+    + inversion H; subst; [discriminate | ].   
+      injection H0; intros; subst.
+      specialize (IHlt _ _ _ _ _ H5).
+      destruct IHlt.
+      split.
+      - eapply nth_partial_tree_cons; eauto.
+      - auto.
   }
+Qed.
+
+Lemma full_tree_equiv1: forall d t,
+  full_tree d t <-> full_tree_b d t = true.
+Proof.
+  intros.
+  split; intros.
+  + induction H; subst; simpl.
+    - reflexivity.
+    - rewrite IHfull_tree1, IHfull_tree2; reflexivity.
+  + revert d H.
+    induction t; simpl; intros.
+    - apply Z.eqb_eq in H; subst.
+      constructor; reflexivity.
+    - apply andb_prop in H; destruct H.
+      specialize (IHt1 _ H).
+      specialize (IHt2 _ H0).
+      constructor; auto.
+Qed.
+
+Lemma complete_tree_push_not_fullb: forall d t,
+  complete_tree_push d t ->
+  full_tree_b d t = false.
+Proof.
+  intros.
+  induction H; subst; simpl.
+  + reflexivity.
+  + apply andb_false_intro2; assumption.
+  + apply andb_false_intro1; assumption.
+Qed.
+
+Lemma full_tree_b_dep_restrict: forall t d,
+  full_tree_b d t = true -> full_tree_b (d + 1) t = false.
+Proof.
+  intros t.
+  induction t; simpl; intros.
+  + rewrite Z.eqb_neq.
+    rewrite Z.eqb_eq in H.
+    lia.
+  + apply andb_prop in H; destruct H.
+    specialize (IHt1 _ H).
+    replace (d - 1 + 1) with (d + 1 - 1) in IHt1 by lia.
+    apply andb_false_intro1; assumption. 
+Qed.
+ 
+Lemma full_tree_nonneg: forall d t,
+  full_tree d t -> 0 <= d.
+Proof.
+  intros.
+  induction H; lia.
+Qed.
+
+Lemma full_tree_same_size: forall d t1 t2,
+  full_tree d t1 -> full_tree d t2 -> tree_size t1 = tree_size t2.
+Proof.
+  intros.
+  revert t2 H0.
+  induction H; intros.
+  + inversion H0; [reflexivity | ]. 
+    pose proof full_tree_nonneg _ _ H1; lia.
+  + inversion H1; subst.
+    - pose proof full_tree_nonneg _ _ H; lia.
+    - simpl.
+      rewrite (IHfull_tree1 _ H2).
+      rewrite (IHfull_tree2 _ H3).
+      reflexivity.  
+Qed.
+
+Lemma complete_tree_push_dep_positve: forall d t,
+  complete_tree_push d t -> 1 <= d.
+Proof.
+  intros.
+  induction H; lia.
 Qed.
 
 Fixpoint find_hole_index (rt_n: Z) (rev_pt: partial_tree): Z :=
@@ -827,6 +899,12 @@ Fixpoint find_hole_index (rt_n: Z) (rev_pt: partial_tree): Z :=
       find_hole_index (rt_n * 2 + 1) lt
     else
       find_hole_index (rt_n * 2) lt
+  end.
+
+Fixpoint find_hole_index_pow2 (rev_pt: partial_tree): Z :=
+  match (rev_pt) with
+  | nil => 1
+  | (flg, v, t) :: lt => 2 * find_hole_index_pow2 lt
   end.
 
 Lemma find_hole_index_sound: forall l n p lt,
@@ -841,49 +919,220 @@ Proof.
   + inversion H; [lia | discriminate].
   + destruct a as [[flg v] tr].
     destruct flg.
-    - inversion H; [discriminate | ].
-      injection H1; intros; subst lt0 t v0 flg.
-      apply IHl in H5.
-      rewrite H5.
-      simpl.
-      replace (n * 2 + 1) with (n * 2 + 1 * 2 - 1) by lia.
-      rewrite Z.div_add_l by lia.
-      rewrite Z.div_mul by lia.
-      rewrite Z.div_small by lia.
-      reflexivity.
-    - inversion H; [discriminate | ].
-      injection H1; intros; subst lt0 t v0 flg.
-      apply IHl in H5.
-      rewrite H5.
-      simpl.
-      replace (n * 2) with (n * 2 + 1 * 2 - 1) by lia.
-      rewrite Z.div_add_l by lia.
-      rewrite Z.div_mul by lia.
-      rewrite Z.div_small by lia.
-      reflexivity.  
+    - pose proof list_nth_on_partial_tree_app_inv _ _ _ _ _ _ _ H.
+      simpl in H0.
+      destruct H0.
+      eapply IHl; eauto.
+    - pose proof list_nth_on_partial_tree_app_inv _ _ _ _ _ _ _ H.
+      simpl in H0.
+      destruct H0.
+      eapply IHl; eauto.   
 Qed.
 
-Lemma complete_pt_size: forall d p pt l,
-  complete_tree_push d (tree_compose pt Leaf) ->
-  list_on_partial_tree l p pt ->
-  p > tree_size (tree_compose pt Leaf).
+Lemma find_hole_index_lowbit: forall pt n, 
+  find_hole_index n pt = n * (find_hole_index_pow2 pt) + find_hole_index 0 pt.
 Proof.
-  intros.
-  revert d p H H0.
-  replace pt with (rev (rev pt)) by (rewrite rev_involutive; auto).
-  induction (rev pt); simpl; intros.
-  + inversion H0; [lia | discriminate].
-  + destruct a as [[flg v] tr].
-    rewrite tree_compose_append.
-    destruct flg; simpl.
-    -  
+  intros pt.
   induction pt; simpl; intros.
-  + inversion H0; [lia | discriminate].
+  + lia.
   + destruct a as [[flg v] tr].
     destruct flg.
-    - inversion H0; [discriminate | ].
-      injection H1; intros. subst lt0 t v0 flg. 
-Admitted. 
+    - rewrite IHpt.
+      rewrite (IHpt 1).
+      lia.
+    - rewrite IHpt.
+      lia.  
+Qed.
+
+Lemma full_tree_size: forall d t,
+  full_tree d t ->
+  tree_size t = 2 ^ d - 1.
+Proof.
+  intros.
+  induction H; subst; simpl.
+  + lia.
+  + rewrite IHfull_tree1.
+    rewrite IHfull_tree2.
+    replace dep with ((dep - 1) + 1) at 3 by lia.
+    rewrite Zpower_exp.
+    - lia. 
+    - pose proof full_tree_nonneg _ _ H; lia. 
+    - lia. 
+Qed.
+
+Lemma complete_tree_push_size_upper_bound: forall d t,
+  complete_tree_push d t ->
+  tree_size t < 2 ^ d - 1.
+Proof.
+  intros.
+  induction H; subst; simpl.
+  + lia.
+  + pose proof full_tree_size _ _ H.
+    pose proof complete_tree_push_dep_positve _ _ H0.
+    replace dep with (dep - 1 + 1) by lia.
+    rewrite Zpower_exp; try lia.
+  + pose proof full_tree_size _ _ H0.
+    pose proof complete_tree_push_dep_positve _ _ H.
+    replace dep with (dep - 1 + 1) by lia.
+    assert (tree_size rs <= 2 ^ (dep - 1) - 1). {
+      rewrite H1.
+      replace (dep - 1) with (dep - 2 + 1) by lia.
+      rewrite Zpower_exp; try lia.
+      pose proof Z.pow_pos_nonneg 2 (dep - 2) ltac:(lia) ltac:(lia).
+      lia.
+    }
+    rewrite Zpower_exp; try lia. 
+Qed.
+
+Lemma complete_tree_find_hole_lower_bound: forall pt d,
+  complete_tree_push d (tree_compose pt Leaf) ->
+  find_hole_index_pow2 (rev pt) >= 2 ^ (d - 1).
+Proof.
+  intros.
+  revert d H.
+  replace pt with (rev (rev pt)) by (rewrite rev_involutive; auto).
+  replace (rev (rev (rev pt))) with (rev pt) by (rewrite rev_involutive; auto).
+  induction (rev pt); simpl; intros.
+  + inversion H; subst; simpl; lia.
+  + destruct a as [[flg v] tr].
+    rewrite tree_compose_append in H.
+    destruct flg; simpl.
+    - inversion H; subst.
+      * specialize (IHl _ H4).
+        replace (d - 1) with (d - 1 - 1 + 1) by lia.
+        rewrite Zpower_exp; try lia.
+        pose proof complete_tree_push_dep_positve _ _ H4.
+        lia.
+      * pose proof full_tree_complete_tree_push _ _ H4.
+        replace (d - 2 + 1) with (d - 1) in H0 by lia.
+        specialize (IHl _ H0).
+        replace (d - 1) with (d - 1 - 1 + 1) by lia.
+        rewrite Zpower_exp; try lia.
+        pose proof complete_tree_push_dep_positve _ _ H0.
+        lia.
+    - inversion H; subst.
+      * pose proof full_tree_complete_tree_push _ _ H2.
+        replace (d - 1 + 1) with d in H0 by lia.
+        specialize (IHl _ H0).
+        pose proof complete_tree_push_dep_positve _ _ H0.
+        pose proof Z.pow_pos_nonneg 2 (d - 1) ltac:(lia) ltac:(lia).
+        lia.
+      * specialize (IHl _ H2).
+        replace (d - 1) with (d - 1 - 1 + 1) by lia.
+        rewrite Zpower_exp; try lia.
+        pose proof complete_tree_push_dep_positve _ _ H2.
+        lia. 
+Qed.
+
+Lemma full_tree_find_hole_lower_bound: forall d pt,
+  full_tree d (tree_compose pt Leaf) ->
+  find_hole_index_pow2 (rev pt) >= 2 ^ d.
+Proof.
+  intros.
+  revert d H.
+  replace pt with (rev (rev pt)) by (rewrite rev_involutive; auto).
+  replace (rev (rev (rev pt))) with (rev pt) by (rewrite rev_involutive; auto).
+  induction (rev pt); simpl; intros.
+  + inversion H; subst; simpl; lia.
+  + destruct a as [[flg v] tr].
+    rewrite tree_compose_append in H.
+    destruct flg; simpl.
+    - inversion H; subst.
+      specialize (IHl _ H4).
+      replace d with (d - 1 + 1) by lia.
+      rewrite Zpower_exp; try lia.
+      pose proof full_tree_nonneg _ _ H4.
+      lia.
+    - inversion H; subst.
+      specialize (IHl _ H2).
+      replace d with (d - 1 + 1) by lia.
+      rewrite Zpower_exp; try lia.
+      pose proof full_tree_nonneg _ _ H2.
+      lia. 
+Qed.
+
+Lemma complete_pt_size: forall d pt,
+  complete_tree_push d (tree_compose pt Leaf) ->
+  find_hole_index 1 (rev pt) > tree_size (tree_compose pt Leaf).
+Proof.
+  intros.
+  revert d H.
+  replace pt with (rev (rev pt)) by (rewrite rev_involutive; auto).
+  replace (rev (rev (rev pt))) with (rev pt) by (rewrite rev_involutive; auto).
+  induction (rev pt); simpl; intros.
+  + lia.
+  + destruct a as [[flg v] tr].
+    rewrite tree_compose_append.
+    rewrite tree_compose_append in H.
+    destruct flg; simpl.
+    - rewrite find_hole_index_lowbit.
+      rewrite find_hole_index_lowbit in IHl.
+      inversion H; subst.
+      * specialize (IHl _ H4).
+        assert (2 * find_hole_index_pow2 l >= 1 + tree_size tr). {
+          erewrite full_tree_size; eauto.
+          replace (1 + (2 ^ (d - 1) - 1)) with (2 ^ (d - 1)) by lia.
+          pose proof complete_tree_find_hole_lower_bound _ _ H4.
+          pose proof complete_tree_push_dep_positve _ _ H4.
+          replace (d - 1) with (d - 1 - 1 + 1) by lia.
+          replace (rev (rev l)) with l in H0 by (rewrite rev_involutive; auto).
+          rewrite Zpower_exp; try lia.
+        }
+        lia.
+      * pose proof full_tree_complete_tree_push _ _ H4.
+        replace (d - 2 + 1) with (d - 1) in H0 by lia.
+        specialize (IHl _ H0).
+        assert (2 * find_hole_index_pow2 l >= 1 + tree_size tr). {
+          pose proof complete_tree_push_size_upper_bound _ _ H2.
+          pose proof full_tree_find_hole_lower_bound _ _ H4.
+          replace (rev (rev l)) with l in H3 by (rewrite rev_involutive; auto).
+          assert (2 * 2 ^ (d - 2) > 2 ^ (d - 1) - 1). {
+            replace (d - 1) with (d - 2 + 1) by lia.
+            rewrite Zpower_exp; try lia.
+            pose proof complete_tree_push_dep_positve _ _ H0.
+            lia.
+          }
+          lia.
+        }
+        lia.
+    - rewrite find_hole_index_lowbit.
+      rewrite find_hole_index_lowbit in IHl.
+      inversion H; subst.
+      * pose proof full_tree_complete_tree_push _ _ H2.
+        replace (d - 1 + 1) with d in H0 by lia.
+        specialize (IHl _ H0).
+        assert (find_hole_index_pow2 l >= 1 + tree_size tr). {
+          pose proof complete_tree_push_size_upper_bound _ _ H4.
+          pose proof full_tree_find_hole_lower_bound _ _ H2.
+          replace (rev (rev l)) with l in H3 by (rewrite rev_involutive; auto).
+          lia.
+        }
+        lia.  
+      * specialize (IHl _ H2).
+        assert (find_hole_index_pow2 l >= 1 + tree_size tr). {
+          erewrite full_tree_size; eauto.
+          replace (1 + (2 ^ (d - 2) - 1)) with (2 ^ (d - 2)) by lia.
+          pose proof complete_tree_find_hole_lower_bound _ _ H2.
+          pose proof complete_tree_push_dep_positve _ _ H2.
+          replace (d - 1 - 1) with (d - 2) in H0 by lia.
+          replace (rev (rev l)) with l in H0 by (rewrite rev_involutive; auto).
+          lia.
+        }
+        lia.
+Qed.
+
+Lemma list_nth_on_partial_tree_spec: forall l p pt,
+  list_on_partial_tree l p pt <-> list_nth_on_partial_tree l 1 p pt.
+Proof.
+  intros.
+  split; intros.
+  + induction H; subst.
+    - apply nth_partial_tree_nil; auto.
+    - eapply nth_partial_tree_cons; eauto.
+  + induction H; subst.
+    - eapply nil_partial_tree; eauto.
+    - eapply cons_partial_tree; eauto.   
+Qed.
 
 Lemma legal_list_impl_legal_tree_state: forall (l: list_state) (t: tree_state),
   list_on_tree_state l t -> legal_list_state l -> legal_tree_state t.
@@ -898,7 +1147,9 @@ Proof.
   unfold legal_tree_state; simpl.
   destruct tr; [ | exists v, tr1, tr2; auto].
   destruct H3.
-  pose proof complete_pt_size _ _ _ _ H3 H1.
+  rewrite list_nth_on_partial_tree_spec in H1.
+  pose proof find_hole_index_sound _ _ _ _ H1.
+  pose proof complete_pt_size _ _ H3.
   lia.
 Qed.
 

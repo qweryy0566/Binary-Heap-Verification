@@ -78,75 +78,6 @@ Proof.
   }
 Qed. *)
 
-Lemma tree_push_decompose_sound: forall d t v,
-  complete_tree_push d t ->
-  exists pt, t = tree_compose pt Leaf /\ complete_tree_pop d (tree_compose pt (Node v Leaf Leaf)).
-Proof.
-  intros.
-  induction H.
-  + exists nil.
-    simpl.
-    split; [tauto |].
-    apply complete_tree_pop_right_hole.
-    - apply full_tree_Leaf; lia.
-    - apply complete_tree_pop_Leaf; lia. 
-  + destruct IHcomplete_tree_push as [pt [? ?]].
-    exists (pt ++ [(true, v0, ls)]); split.
-    - rewrite tree_compose_append, H1.
-      reflexivity.
-    - rewrite tree_compose_append. 
-      apply complete_tree_pop_right_hole; tauto.
-  + destruct IHcomplete_tree_push as [pt [? ?]].
-    exists (pt ++ [(false, v0, rs)]); split.
-    - rewrite tree_compose_append, H1.
-      reflexivity.
-    - rewrite tree_compose_append. 
-      apply complete_tree_pop_left_hole; tauto. 
-Qed.
-
-Lemma full_tree_equiv1: forall d t,
-  full_tree d t <-> full_tree_b d t = true.
-Proof.
-  intros.
-  split; intros.
-  + induction H; subst; simpl.
-    - reflexivity.
-    - rewrite IHfull_tree1, IHfull_tree2; reflexivity.
-  + revert d H.
-    induction t; simpl; intros.
-    - apply Z.eqb_eq in H; subst.
-      constructor; reflexivity.
-    - apply andb_prop in H; destruct H.
-      specialize (IHt1 _ H).
-      specialize (IHt2 _ H0).
-      constructor; auto.
-Qed.
-
-Lemma complete_tree_push_not_fullb: forall d t,
-  complete_tree_push d t ->
-  full_tree_b d t = false.
-Proof.
-  intros.
-  induction H; subst; simpl.
-  + reflexivity.
-  + apply andb_false_intro2; assumption.
-  + apply andb_false_intro1; assumption.
-Qed.
-
-Lemma full_tree_b_dep_restrict: forall t d,
-  full_tree_b d t = true -> full_tree_b (d + 1) t = false.
-Proof.
-  intros t.
-  induction t; simpl; intros.
-  + rewrite Z.eqb_neq.
-    rewrite Z.eqb_eq in H.
-    lia.
-  + apply andb_prop in H; destruct H.
-    specialize (IHt1 _ H).
-    replace (d - 1 + 1) with (d + 1 - 1) in IHt1 by lia.
-    apply andb_false_intro1; assumption. 
-Qed.
-
 Fixpoint tree_next_pow2 (d: Z) (tr: tree): Z :=
   match tr with
   | Leaf => 1
@@ -157,30 +88,7 @@ Fixpoint tree_next_pow2 (d: Z) (tr: tree): Z :=
       2 * tree_next_pow2 (d - 1) ls
   end.
 
-Lemma full_tree_nonneg: forall d t,
-  full_tree d t -> 0 <= d.
-Proof.
-  intros.
-  induction H; lia.
-Qed.
-
-Lemma full_tree_same_size: forall d t1 t2,
-  full_tree d t1 -> full_tree d t2 -> tree_size t1 = tree_size t2.
-Proof.
-  intros.
-  revert t2 H0.
-  induction H; intros.
-  + inversion H0; [reflexivity | ]. 
-    pose proof full_tree_nonneg _ _ H1; lia.
-  + inversion H1; subst.
-    - pose proof full_tree_nonneg _ _ H; lia.
-    - simpl.
-      rewrite (IHfull_tree1 _ H2).
-      rewrite (IHfull_tree2 _ H3).
-      reflexivity.  
-Qed.
-
-Lemma full_tree_next_pow2: forall d t,
+  Lemma full_tree_next_pow2: forall d t,
   full_tree d t ->
   tree_next_pow2 (d + 1) t = tree_size t + 1.
 Proof.
@@ -213,13 +121,6 @@ Proof.
   tauto.
 Qed.
 
-Lemma complete_tree_push_dep_positve: forall d t,
-  complete_tree_push d t -> 1 <= d.
-Proof.
-  intros.
-  induction H; lia.
-Qed.
-
 Lemma next_index_lowbit: forall n d t,
   complete_tree_push d t ->
   next_index d n t = n * (tree_next_pow2 d t) + next_index d 0 t.
@@ -243,6 +144,32 @@ Proof.
       specialize (IHt1 (d - 1) (n * 2) H2).
       rewrite IHt1.
       lia. 
+Qed.
+
+Lemma tree_push_decompose_sound: forall d t v,
+  complete_tree_push d t ->
+  exists pt, t = tree_compose pt Leaf /\ complete_tree_pop d (tree_compose pt (Node v Leaf Leaf)).
+Proof.
+  intros.
+  induction H.
+  + exists nil.
+    simpl.
+    split; [tauto |].
+    apply complete_tree_pop_right_hole.
+    - apply full_tree_Leaf; lia.
+    - apply complete_tree_pop_Leaf; lia. 
+  + destruct IHcomplete_tree_push as [pt [? ?]].
+    exists (pt ++ [(true, v0, ls)]); split.
+    - rewrite tree_compose_append, H1.
+      reflexivity.
+    - rewrite tree_compose_append. 
+      apply complete_tree_pop_right_hole; tauto.
+  + destruct IHcomplete_tree_push as [pt [? ?]].
+    exists (pt ++ [(false, v0, rs)]); split.
+    - rewrite tree_compose_append, H1.
+      reflexivity.
+    - rewrite tree_compose_append. 
+      apply complete_tree_pop_left_hole; tauto. 
 Qed.
 
 Lemma complete_tree_push_same_next_pow2: forall d t1 t2,
