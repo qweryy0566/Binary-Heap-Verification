@@ -1395,7 +1395,11 @@ Proof.
   induction H.
   + apply list_nth_on_tree_Leaf.
   + eapply list_nth_on_tree_Node; try tauto.
-Admitted.
+    - rewrite Zlength_app.
+      replace (Zlength [v]) with 1 by tauto.
+      lia.
+    - rewrite app_Znth1; [tauto|lia].
+Qed.
 
 Lemma list_on_partial_tree_app: forall (l: list Z) (lt: partial_tree) (v n: Z),
   list_on_partial_tree l n lt -> list_on_partial_tree (l ++ [v]) n lt.
@@ -1407,8 +1411,15 @@ Proof.
     apply nil_partial_tree; tauto.
   + destruct a as [[flg val] tr].
     inversion H; [discriminate|].
-    eapply cons_partial_tree; try reflexivity.
-Admitted.
+    injection H0; intros; subst.
+    eapply cons_partial_tree; try reflexivity; try tauto.
+    - rewrite Zlength_app.
+      replace (Zlength [v]) with 1 by tauto.
+      lia.
+    - rewrite app_Znth1; [tauto|lia].
+    - apply list_nth_on_tree_app; tauto.
+    - apply IHlt; tauto.
+Qed.
 
 Lemma list_on_tree_state_app2: forall (l: list Z) (t: tree) (lt: partial_tree) (v n  d: Z), 
   list_on_tree_state (l,n) (lt,t) -> complete_tree_push d t ->
@@ -1467,6 +1478,32 @@ Proof.
   intros.
 Admitted.
 
+(* Lemma complete_tree_holds: forall (t ts: tree) (lt: partial_tree) (d d1 v: Z), 
+  ts = (tree_compose lt t) -> complete_tree_push d ts -> complete_tree_push d1 t ->
+  (exists n, next_index d 1 ts = next_index d1 n t) ->
+  exists dep, complete_tree_pop dep (tree_compose (tree_to_partial_tree_fix lt t d1) (Node v Leaf Leaf)).
+Proof.
+  intros.
+  revert d1 t lt H H1 H2.
+  induction H0; intros.
+  + give_up.
+  + 
+Qed. *)
+
+
+Lemma complete_tree_holds: forall (t: tree)(d v: Z), 
+  complete_tree_push d t -> complete_tree_pop d (tree_compose (tree_to_partial_tree t d) (Node v Leaf Leaf)). 
+Proof.
+  intros.
+  induction H; intros.
+  + give_up.
+  + unfold tree_to_partial_tree.
+    apply full_tree_b_iff_full_tree in H.
+    simpl.
+    rewrite H. 
+  (*要写一个东西，把tree_ot_partial_tree的东西给提出来*)
+Qed.
+
 Lemma list_on_tree_state_app: forall (l: list Z) (t: tree) (v: Z),
   Zlength l >= 1 -> list_on_tree l t -> exists d, list_on_tree_state (l++[v], Zlength l) (tree_to_partial_tree t d,Node v Leaf Leaf).
 Proof.
@@ -1504,7 +1541,9 @@ Proof.
     - replace (Zlength l) with (tree_size t + 1) by lia.
       unfold tree_to_partial_tree.
       rewrite <- (tree_next_index_size _ dep); tauto.
-    -
+    - split.
+      * give_up.
+      * apply complete_tree_equality.
 Qed.
 
 
