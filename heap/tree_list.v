@@ -4,6 +4,7 @@ Require Import Notations Logic Datatypes.
 From Coq Require Import String List ZArith. 
 From compcert Require Import Coqlib Integers Floats AST Ctypes Cop Clight Clightdefs.
 Require Import Coq.Logic.Classical_Pred_Type.
+Require Import Coq.Logic.Classical_Prop.
 
 Require Import Coq.micromega.Psatz.
 Local Open Scope string.
@@ -44,10 +45,10 @@ Inductive full_tree (dep: Z): tree -> Prop :=
 
 Inductive complete_tree_pop (dep: Z): tree -> Prop :=
   | complete_tree_pop_Leaf: dep = 0 -> complete_tree_pop dep Leaf
-  | complete_tree_pop_left_hull: forall v ls rs,
+  | complete_tree_pop_left_hole: forall v ls rs,
       complete_tree_pop (dep - 1) ls -> full_tree (dep - 2) rs ->
       complete_tree_pop dep (Node v ls rs)
-  | complete_tree_pop_right_hull: forall v ls rs,
+  | complete_tree_pop_right_hole: forall v ls rs,
       full_tree (dep - 1) ls -> complete_tree_pop (dep - 1) rs ->
       complete_tree_pop dep (Node v ls rs).
 
@@ -59,6 +60,13 @@ Inductive complete_tree_push (dep: Z): tree -> Prop :=
   | complete_tree_push_right_full: forall v ls rs,
       complete_tree_push (dep - 1) ls -> full_tree (dep - 2) rs ->
       complete_tree_push dep (Node v ls rs).
+
+Fixpoint full_tree_b (dep: Z) (t : tree): bool :=
+  match t with
+  | Leaf => dep =? 0
+  | Node v ls rs => 
+      full_tree_b (dep - 1) ls && full_tree_b (dep - 1) rs
+  end.
 
 Example tree4: tree := Node 4 Leaf Leaf.
 Example tree5: tree := Node 5 Leaf Leaf.
@@ -73,6 +81,95 @@ Fixpoint tree_size (t: tree): Z :=
   match t with
     | Leaf => 0
     | Node v ls rs => 1 + (tree_size ls) + (tree_size rs)
+  end.
+
+Lemma full_tree_complete_tree_pop: forall dep t,
+  full_tree dep t -> complete_tree_pop dep t.
+Proof.
+  intros.
+  induction H.
+  + apply complete_tree_pop_Leaf; auto.
+  + apply complete_tree_pop_right_hole; auto.
+Qed.
+
+Lemma full_tree_complete_tree_push: forall dep t,
+  full_tree dep t -> complete_tree_push (dep + 1) t.
+Proof.
+  intros.
+  induction H.
+  + apply complete_tree_push_Leaf; lia.
+  + apply complete_tree_push_right_full.
+    - replace (dep + 1 - 1) with (dep - 1 + 1) by lia; auto.
+    - replace (dep + 1 - 2) with (dep - 1) by lia; auto. 
+Qed.
+
+Lemma not_full_tree_complete_tree_imp_pop: forall dep t,
+  ~ full_tree (dep - 1) t ->
+  complete_tree_push dep t -> complete_tree_pop dep t.
+Proof.
+  intros.
+  revert H; induction H0; intros.
+  + pose proof full_tree_Leaf (dep - 1) ltac:(lia).
+    contradiction.
+  + destruct (classic (full_tree (dep - 2) rs)).
+    - pose proof full_tree_complete_tree_pop _ _ H.
+      apply complete_tree_pop_left_hole; auto.
+    - replace (dep - 1 - 1) with (dep - 2) in IHcomplete_tree_push by lia.
+      specialize (IHcomplete_tree_push H2).
+      apply complete_tree_pop_right_hole; auto.
+  + destruct (classic (full_tree (dep - 2) ls)).
+    - replace (dep - 2) with ((dep - 1) - 1) in H by lia.
+      replace (dep - 2) with ((dep - 1) - 1) in H2 by lia.
+      pose proof full_tree_Node _ v ls rs H2 H; contradiction.
+    - replace (dep - 1 - 1) with (dep - 2) in IHcomplete_tree_push by lia.
+      specialize (IHcomplete_tree_push H2).
+      apply complete_tree_pop_left_hole; auto.
+Qed.
+
+Lemma not_full_tree_complete_tree_imp_push: forall dep t,
+  ~ full_tree dep t ->
+  complete_tree_pop dep t -> complete_tree_push dep t.
+Proof.
+  intros.
+  revert H; induction H0; intros.
+  + pose proof full_tree_Leaf dep ltac:(lia).
+    contradiction.
+  + destruct (classic (full_tree (dep - 1) ls)).
+    - pose proof full_tree_complete_tree_push _ _ H.
+      apply complete_tree_push_left_full; auto.
+      replace (dep - 2 + 1) with (dep - 1) in H3 by lia; auto.
+    - specialize (IHcomplete_tree_pop H2).
+      apply complete_tree_push_right_full; auto.
+  + destruct (classic (full_tree (dep - 1) rs)).
+    - pose proof full_tree_Node _ v ls rs H H2; contradiction.
+    - specialize (IHcomplete_tree_pop H2).
+      apply complete_tree_push_left_full; auto.
+Qed.
+
+Lemma complete_tree_equality: forall t,
+  (exists d, complete_tree_pop d t) <-> (exists d, complete_tree_push d t).
+Proof.
+  intros; split; intros; destruct H as [d H].
+  + destruct (classic (full_tree d t)).
+    - exists (d + 1).
+      apply full_tree_complete_tree_push; auto.
+    - exists d.
+      apply not_full_tree_complete_tree_imp_push; auto.
+  + destruct (classic (full_tree (d - 1) t)).
+    - exists (d - 1).
+      apply full_tree_complete_tree_pop; auto.
+    - exists d.
+      apply not_full_tree_complete_tree_imp_pop; auto.   
+Qed.
+
+Fixpoint last_index (d: Z) (rt_n: Z) (tr: tree): Z :=
+  match tr with
+    | Leaf => rt_n / 2
+    | Node v ls rs =>
+      if (full_tree_b (d - 1) ls) then
+        last_index (d - 1) (rt_n * 2 + 1) rs
+      else
+        last_index (d - 1) (rt_n * 2) ls
   end.
 
 Definition list_on_tree (l: list Z) (tr: tree): Prop :=
@@ -355,7 +452,7 @@ Inductive list_on_partial_tree (l: list Z) (p: Z) (lt: partial_tree) : Prop :=
   | nil_partial_tree: p = 1 -> lt = nil -> list_on_partial_tree l p lt
   | cons_partial_tree: forall flg v t lt0, 
     lt = (flg, v, t) :: lt0 ->
-    1 < p < Zlength l -> 
+    1 <= p/2 < Zlength l -> 
     p = (p / 2) * 2 + (if flg then 1 else 0) ->
     Znth (p / 2) l = v -> 
     list_nth_on_tree l (p + (if flg then -1 else 1)) t -> 
@@ -552,7 +649,10 @@ Proof.
   unfold list_on_tree_state_fix in H.
   destruct H.
   destruct H1.
-  inversion H1; [auto | lia].
+  inversion H1; [auto |].
+  rewrite H0 in H4.
+  replace (1/2) with 0 in H4 by tauto.
+  lia.
 Qed.
 
 Lemma legal_list_impl_legal_tree_state: forall (l: list_state) (t: tree_state),
@@ -623,15 +723,13 @@ Proof.
       injection H3; intros; subst.
       apply (IHlt (n/2)); try tauto.
       eapply list_nth_on_tree_Node; try tauto.
-      lia.
-      replace (n / 2 * 2) with (n + -1) by lia; tauto.
+      replace (n/2*2) with(n-1) by lia; tauto.
       rewrite <- H5; tauto.
     - simpl; simpl in H, H0.
       inversion H0; [discriminate|].
       injection H3; intros; subst.
       apply (IHlt (n/2)); try tauto.
       eapply list_nth_on_tree_Node; try tauto.
-      lia.
       replace (n / 2 * 2) with n by lia; tauto.
       replace (n / 2 * 2 + 1) with (n+1) by lia; tauto.
 Qed.
@@ -744,6 +842,11 @@ Proof.
   + apply Node_same; tauto.  
 Qed.
 
+Lemma Div_2_gt_0: forall (n: Z), 
+  1 <= n/2 -> n/2 < n.
+Proof.
+Admitted.
+
 Lemma swap_up_right_hold_true: forall (l l': list_state) (ls rs tr: tree) (v1 v2: Z) (lt: partial_tree),
   list_on_tree_state l ((true,v2,tr) :: lt, Node v1 ls rs) -> list_relation.list_swap (snd l) (snd l') (fst l) (fst l') -> snd l / 2 = snd l' -> list_on_tree_state l' (lt, Node v1 tr (Node v2 ls rs)).
 Proof.
@@ -758,9 +861,8 @@ Proof.
   inversion H2; subst; clear H2.
   assert (1 <= n / 2 < n). {
     split.
-    + pose proof Z.div_le_lower_bound n 2 1 ltac:(lia) ltac:(lia).
-      lia.
-    + pose proof Z.div_lt_upper_bound n 2 n ltac:(lia) ltac:(lia).
+    + lia.
+    + apply Div_2_gt_0.
       lia. 
   }
   inversion H.
@@ -871,9 +973,8 @@ Proof.
   inversion H2; subst; clear H2.
   assert (1 <= n / 2 < n). {
     split.
-    + pose proof Z.div_le_lower_bound n 2 1 ltac:(lia) ltac:(lia).
-      lia.
-    + pose proof Z.div_lt_upper_bound n 2 n ltac:(lia) ltac:(lia).
+    + lia.
+    + apply Div_2_gt_0.
       lia. 
   }
   inversion H.
@@ -1249,152 +1350,161 @@ Proof.
     apply (Up_fail_impl_MaxHeap _ H6 H5).
 Qed.
 
-Definition get_snd_01(n p k: Z): bool:=
-  if (p*2+1 =? (Z.shiftr n (k-1))) then true
-  else false.
+Fixpoint next_index (d: Z) (rt_n: Z) (tr: tree): Z :=
+  match tr with
+    | Leaf => rt_n
+    | Node v ls rs =>
+      if (full_tree_b (d - 1) ls) then
+        next_index (d - 1) (rt_n * 2 + 1) rs
+      else
+        next_index (d - 1) (rt_n * 2) ls
+  end.
 
-Fixpoint tree_to_partial_tree_fix (tl: partial_tree) (t: tree) (n p k: Z): partial_tree :=
+Fixpoint tree_to_partial_tree_fix (tl: partial_tree) (t: tree) (d: Z): partial_tree :=
   match t with
     | Leaf => tl
     | Node v ls rs => 
-      match (get_snd_01 n p k) with
-      | true => tree_to_partial_tree_fix ((true, v, ls) :: tl) rs n (p*2+1) (k-1)
-      | false => tree_to_partial_tree_fix ((false, v, rs) :: tl) ls n (p*2) (k-1)
+      match (full_tree_b (d - 1) ls) with
+      | true => tree_to_partial_tree_fix ((true, v, ls) :: tl) rs (d-1)
+      | false => tree_to_partial_tree_fix ((false, v, rs) :: tl) ls (d-1)
       end (*true go right and right is cut*)
   end.
 
-Definition tree_to_partial_tree (t: tree): partial_tree := 
-  tree_to_partial_tree_fix nil t (tree_size t + 1) 1 (Z.log2 (tree_size t + 1)).
+Definition tree_to_partial_tree (t: tree) (d: Z): partial_tree := 
+  tree_to_partial_tree_fix nil t d.
 
-Lemma Z_shiftr_minus_one: forall (v n0 n: Z), 
-  Z.shiftr v n0 = n -> 1 <= n < v -> (Z.shiftr v (n0 - 1) = n * 2 \/ Z.shiftr v (n0 - 1) = n * 2 + 1).
-Proof.
-    (* replace n0 with (n0-1+1) in H1 by lia.
-    rewrite <- Z.shiftr_shiftr in H1.
-    set (x:= Z.shiftr (Zlength l) (n0 - 1)) in *.
-    unfold Z.shiftr in H1.
-    give_up.
-    lia. *)
-Admitted.
-
-Lemma Z_shiftr_log2: forall (n k:Z),
-  n >= 1 -> (Z.shiftr n k = 1 <-> k = Z.log2(n)).
+Lemma Odd_Div2: forall (n: Z),
+  n >= 1 -> (n*2+1)/2 = n.
 Proof.
 Admitted.
 
-Lemma Z_shiftr_lt_one: forall (n k:Z),
-  n >= 1 -> n > Z.shiftr n k -> k >= 1.
+Lemma Even_Div2: forall (n: Z),
+  n >= 1 -> (n*2)/2 = n.
 Proof.
 Admitted.
 
-Lemma list_length_tree_size: forall (l: list Z) (t: tree),
-  list_on_tree l t -> tree_size t + 1= Zlength l.
+Lemma full_tree_b_iff_full_tree: forall (t: tree) (d: Z),
+  full_tree d t <-> full_tree_b d t = true.
 Proof.
 Admitted.
 
-Lemma list_on_tree_hold: forall (l: list Z) (t: tree) (lt: partial_tree) (n v: Z),
-  list_nth_on_tree l n t -> list_on_tree l (tree_compose lt t) -> is_child_index (Zlength l) n -> exists k, list_on_partial_tree (l++[v]) (Zlength l) (tree_to_partial_tree_fix lt t (Zlength l) n k) /\ (Z.shiftr (Zlength l) k) = n.
+Lemma list_nth_on_tree_app:  forall (l: list Z) (v n: Z) (t: tree),
+  list_nth_on_tree l n t -> list_nth_on_tree (l++[v]) n t.
 Proof.
   intros.
-  revert lt H0.
-  induction H; intros.
-  + unfold is_child_index in H1.
-    destruct H1.
-    destruct H3 as [n0].
-    exists n0.
-    rewrite H0.
-    simpl.
-    rewrite H0 in H2.
-    (* split; [|tauto].
-    subst; simpl.
-    destruct lt.
-    - eapply nil_partial_tree; [|reflexivity].
-      simpl in H2.
-      unfold list_on_tree in H2.
-      inversion H2; [lia| discriminate].
-    - destruct p as [[flg val] tr].
-      destruct flg. *)
-      (* eapply cons_partial_tree; [reflexivity| | | | |].
-      simpl in H2. *)
-    (* assert  *)
-    give_up.
-  + subst; simpl.
-    unfold is_child_index in H1.
-    destruct H1.
-    destruct H1 as [n0].
-    pose proof Z_shiftr_minus_one _ _ _ H1 H0.
-    destruct H2.
-    - unfold get_snd_01.
-      exists n0.
-      rewrite H2.
-      replace ( n * 2 + 1 =? n * 2) with false.
-      rewrite <- H1 in H0.
-      pose proof Z_shiftr_lt_one (Zlength l) n0 ltac:(lia) ltac:(lia).
-      assert (is_child_index (Zlength l) (n * 2)). {
-        unfold is_child_index.
-        split; [|exists (n0-1); tauto].
-        rewrite <- H2.
+  induction H.
+  + apply list_nth_on_tree_Leaf.
+  + eapply list_nth_on_tree_Node; try tauto.
+Admitted.
+
+Lemma list_on_partial_tree_app: forall (l: list Z) (lt: partial_tree) (v n: Z),
+  list_on_partial_tree l n lt -> list_on_partial_tree (l ++ [v]) n lt.
+Proof.
+  intros.
+  revert n H.
+  induction lt; intros.
+  + inversion H; [|discriminate].
+    apply nil_partial_tree; tauto.
+  + destruct a as [[flg val] tr].
+    inversion H; [discriminate|].
+    eapply cons_partial_tree; try reflexivity.
+Admitted.
+
+Lemma list_on_tree_state_app2: forall (l: list Z) (t: tree) (lt: partial_tree) (v n  d: Z), 
+  list_on_tree_state (l,n) (lt,t) -> complete_tree_push d t ->
+  list_on_partial_tree (l++[v]) (next_index d n t) (tree_to_partial_tree_fix lt t d).
+Proof.
+  intros.
+  revert lt n d H H0.
+  induction t; intros.
+  + simpl.
+    unfold list_on_tree_state in H.
+    unfold list_on_tree_state_fix in H; simpl in H.
+    destruct H, H1, H2.
+    apply list_on_partial_tree_app; tauto.
+  + simpl.
+    remember (full_tree_b (d - 1) t1) as HQ.
+    destruct HQ; simpl.
+    - apply IHt2.
+      2: {
+        inversion H0; [tauto|].
+        pose proof full_tree_complete_tree_push _ _ H5.
+        replace (d-2+1) with (d-1) in H6 by lia.
+        tauto.
       }
-      specialize (IHlist_nth_on_tree1 H7 ((false, Znth n l, rs) :: lt) ltac:(tauto)).
-      rename IHlist_nth_on_tree1 into H8.
-      destruct H8 as [k].
-      destruct H8.
-      rewrite <- H2 in H8.
-      assert (k = n0-1). { give_up. }
-      split; [rewrite <- H9; tauto|apply H1].
-      assert ((n * 2 + 1 =? n * 2) = false). {
-        apply Z.eqb_neq.
-        lia.
+      revert H; unfold list_on_tree_state.
+      unfold list_on_tree_state_fix; simpl; intros.
+      destruct H, H1, H2.
+      inversion H.
+      split; [tauto|].
+      split; [|tauto].
+      eapply cons_partial_tree; try reflexivity; try rewrite Odd_Div2; try lia.
+      * simpl.
+        replace (n * 2 + 1 + -1) with (n*2) by lia.
+        tauto.
+      * tauto.
+    - apply IHt1.
+      2: {
+        inversion H0; [|tauto].
+        apply full_tree_b_iff_full_tree in H3.
+        rewrite H3 in HeqHQ.
+        discriminate.
       }
-      rewrite H6.
-      reflexivity.
+      revert H; unfold list_on_tree_state.
+      unfold list_on_tree_state_fix; simpl; intros.
+      destruct H, H1, H2.
+      inversion H.
+      split; [tauto|].
+      split; [|tauto].
+      eapply cons_partial_tree; try reflexivity; try rewrite Even_Div2; try lia.
+      * simpl; tauto.
+      * tauto.
+Qed.
+
+Lemma tree_next_index_size: forall (t: tree) (d: Z),
+  complete_tree_push d t -> next_index d 1 t = tree_size t + 1.
+Proof.
+  intros.
 Admitted.
 
 Lemma list_on_tree_state_app: forall (l: list Z) (t: tree) (v: Z),
-  Zlength l >= 1 -> list_on_tree l t -> list_on_tree_state (l++[v], Zlength l) (tree_to_partial_tree t,Node v Leaf Leaf).
+  Zlength l >= 1 -> list_on_tree l t -> exists d, list_on_tree_state (l++[v], Zlength l) (tree_to_partial_tree t d,Node v Leaf Leaf).
 Proof.
   intros.
-  unfold list_on_tree in H.
   unfold list_on_tree_state; simpl.
   unfold list_on_tree_state_fix.
-  split.
+  unfold list_on_tree in H0.
+  destruct H0, H1.
+  destruct H2 as [dep].
+  exists dep.
   assert (Zlength (l ++ [v]) = Zlength l + 1). {
     rewrite Zlength_app.
     replace (Zlength [v]) with 1; [lia|].
     unfold Zlength; unfold Zlength_aux; reflexivity.
   }
-  + eapply list_nth_on_tree_Node; [reflexivity| | | | ].
-    - rewrite H1.
+  split.
+  + eapply list_nth_on_tree_Node.
+    - rewrite H3.
       pose proof initial_world.zlength_nonneg _ l.
       lia.
     - rewrite app_Znth2; [|lia].
       replace (Zlength l - Zlength l) with 0 by lia.
       reflexivity.
-    - eapply list_nth_on_tree_Leaf; [rewrite H1; lia|reflexivity].
-    - eapply list_nth_on_tree_Leaf; [rewrite H1; lia|reflexivity].
-  + unfold list_on_tree in H0.
-    assert (is_child_index (Zlength l) 1). {
-      unfold is_child_index.
+    - eapply list_nth_on_tree_Leaf. 
+    - eapply list_nth_on_tree_Leaf. 
+  + split.
+    assert (list_on_tree_state (l, 1) (nil, t)). {
+      unfold list_on_tree_state; simpl.
+      unfold list_on_tree_state_fix.
       split; [tauto|].
-      exists (Z.log2 (Zlength l)).
-      pose proof Z_shiftr_log2 (Zlength l) (Z.log2 (Zlength l)) ltac:(lia) .
-      apply H1.
-      reflexivity.
+      split; [apply nil_partial_tree; reflexivity|].
+      split; simpl; [|exists dep]; tauto.
     }
-    pose proof (list_on_tree_hold l t nil 1 v H0 ltac:(tauto) H1).
-    destruct H2 as [k].
-    destruct H2.
-    unfold tree_to_partial_tree.
-    pose proof list_length_tree_size l t ltac:(tauto).
-    rewrite <- H4 in H2.
-    rewrite <- H4 in H3.
-    assert (k = (Z.log2 (tree_size t + 1))). {
-      pose proof Z_shiftr_log2 (tree_size t + 1) k ltac:(lia).
-      apply H5, H3.
-    }
-    rewrite H5 in H2.
-    rewrite <- H4.
-    apply H2. 
+    pose proof list_on_tree_state_app2 l t nil v 1 dep H4 H2.
+    - replace (Zlength l) with (tree_size t + 1) by lia.
+      unfold tree_to_partial_tree.
+      rewrite <- (tree_next_index_size _ dep); tauto.
+    -
 Qed.
 
 
