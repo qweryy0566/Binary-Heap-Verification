@@ -158,6 +158,7 @@ Fixpoint last_index (d: Z) (rt_n: Z) (tr: tree): Z :=
       else
         last_index (d - 1) (rt_n * 2 + 1) rs
   end.
+
 Fixpoint next_index (d: Z) (rt_n: Z) (tr: tree): Z :=
   match tr with
     | Leaf => rt_n
