@@ -19,6 +19,27 @@ Require Import SetsClass.SetsClass.
 Local Open Scope sets.
 Import SetsNotation.
 
+Definition tree_down_succeed:
+  tree_state -> tree_state -> Prop:=
+    fun t1 t2 => exists t, (t::(fst t1)) = (fst t2) /\ (exists v ls rs, (snd t1) = (Node v ls rs) /\ (
+      ((left_son_check_tree v ls rs) /\ ~(right_son_check_tree v ls rs) /\ (swap_down_left v ls rs (snd t2) t)) \/
+      (~(left_son_check_tree v ls rs) /\ (right_son_check_tree v ls rs) /\ (swap_down_right v ls rs (snd t2) t)) \/
+      ((left_son_check_tree v ls rs) /\ (right_son_check_tree v ls rs) /\ (
+        ((get_tree_val rs) > (get_tree_val ls) /\ (swap_down_right v ls rs (snd t2) t)) \/
+        ((get_tree_val rs) <= (get_tree_val ls) /\ (swap_down_left v ls rs (snd t2) t)))
+      ))
+    ).
+
+Definition tree_down_fail:
+  tree_state -> tree_state -> Prop:=
+  Rels.test(
+    fun t => exists v ls rs, ((snd t) = Node v ls rs) /\ (legal_tree_state t) /\ ~(left_son_check_tree v ls rs) /\ ~(right_son_check_tree v ls rs)
+  ).
+
+Definition heap_tree_down:
+  tree_state -> tree_state -> Prop:=
+  (clos_refl_trans tree_down_succeed) ∘ tree_down_fail.
+
 Definition MaxHeap_tree_down(ts: tree_state): Prop :=
   MaxHeap_partial_tree_v (fst ts) (get_tree_val (snd ts)) /\ MaxHeap_no_rt (snd ts) /\
   (exists v ls rs, snd ts = Node v ls rs /\
