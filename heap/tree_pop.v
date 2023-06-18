@@ -47,12 +47,6 @@ Definition tree_pop: tree -> tree -> Prop :=
   fun t t' => (tree_size t <= 1  /\ t' = Leaf) \/
     (tree_size t >= 2 /\ exists v ls rs ts d, t = (Node v ls rs) /\ complete_tree_pop d t /\ heap_tree_down (nil,(tree_cut_last ls rs d)) ts /\ t' = (tree_compose (fst ts) (snd ts))).
 
-Lemma list_on_tree_impl_state: forall (l: list Z) (ls rs: tree) (v: Z),
-  Zlength l > 2 -> list_on_tree l (Node v ls rs) ->
-  exists d, list_on_tree_state (firstn (Z.to_nat (Zlength l - 1)) (upd_Znth 1 l (Znth (Zlength l - 1) l)), 1) (nil, tree_cut_last ls rs d) /\  complete_tree_pop d (Node v ls rs).
-Proof.
-Admitted.
-
 Lemma tree_not_emp: forall (t: tree),
   tree_size t >= 1 -> exists v ls rs, t = Node v ls rs.
 Proof.
@@ -361,6 +355,45 @@ Proof.
     - rewrite <- H5 in HH; simpl in HH; lia.
     - pose proof full_tree_gt_0 _ _ H5; lia.
 Qed.
+
+Lemma list_on_tree_hold: forall (l: list Z) (ls rs: tree) (v n d: Z) (lt: partial_tree),
+  list_on_tree_state (l n) (lt (Node v ls rs)) -> 
+
+Lemma list_on_tree_impl_state: forall (l: list Z) (ls rs: tree) (v: Z),
+  Zlength l > 2 -> list_on_tree l (Node v ls rs) ->
+  exists d, list_on_tree_state (firstn (Z.to_nat (Zlength l - 1)) (upd_Znth 1 l (Znth (Zlength l - 1) l)), 1) (nil, tree_cut_last ls rs d) /\  complete_tree_pop d (Node v ls rs).
+Proof.  
+  intros.
+  unfold list_on_tree in H0.
+  destruct H0, H1.
+  apply complete_tree_equality in H2.
+  destruct H2 as [d].
+  exists d.
+  split; [|tauto].
+  unfold list_on_tree_state; simpl.
+  unfold list_on_tree_state_fix.
+  split. 2:{
+    split.
+    + eapply nil_partial_tree; tauto.
+    + rewrite Zlength_firstn.
+      replace (Z.max 0 (Zlength l - 1)) with (Zlength l - 1) by lia.
+      rewrite upd_Znth_Zlength; [|lia].
+      replace (Z.min (Zlength l - 1) (Zlength l)) with (Zlength l - 1) by lia.
+      simpl.
+      split.
+      - rewrite (tree_cut_last_size _ _ v _).
+        * simpl in H1; lia.
+        * simpl in H1. 
+          simpl.
+          lia.
+        * tauto.
+      - exists d.
+        apply (complete_tree_pop_holds_all _ _ _ v).
+        * tauto.
+        * lia. 
+  }
+
+Admitted.
 
 Lemma Pop_tree_list_rel: forall (l l': list Z) (t: tree),
   list_on_tree l t -> heap_pop l l' -> MaxHeap t ->
