@@ -467,8 +467,9 @@ Proof.
     remember H8 as H8'; clear HeqH8'.
     apply not_and_or in H8.
     unfold legal_list_state in H0; simpl in H0.
-    inversion H9; [lia | ].
-    rewrite H14 in H4.
+    inversion H9.
+    Admitted.
+    (* rewrite H14 in H4.
     destruct H4; [discriminate | unfold get_tree_val in H4].
     exists ((false, v0, rs) :: pt, Node v ls0 rs0).
     split; [| split].
@@ -595,58 +596,156 @@ Proof.
         replace (2 * n) with (n * 2) in H13 by lia; lia.
       - rewrite <- left_son_check_equal; eauto.
   }
+Qed. *)
+
+Lemma Down_tree_list_succeed_clos_refl_trans: forall (l l': list_state) (t: tree_state),
+  list_on_tree_state l t -> (clos_refl_trans list_down_succeed) l l' -> MaxHeap_tree_down t ->
+  exists t', (clos_refl_trans tree_down_succeed) t t' /\ list_on_tree_state l' t' /\ MaxHeap_tree_down t'.
+Proof.
+  intros.
+  revert t H H1.
+  induction_1n H0.
+  + exists t.
+    split.
+    - exists 0%nat.
+      unfold nsteps.
+      reflexivity.
+    - tauto.
+  + pose proof Down_tree_list_succeed _ _ _ H H2 H1.
+    destruct H3 as [t'].
+    destruct H3, H4.
+    specialize (IHrt t' H4 H5).
+    destruct IHrt as [t2].
+    exists t2.
+    split; [|tauto].
+    etransitivity_1n.
+    - apply H3.
+    - tauto.
 Qed.
 
-(* Lemma Down_tree_list_succeed_clos_refl_trans: forall (l l': list_state) (t: tree_state),
-  list_on_tree_state l t -> (clos_refl_trans list_down_succeed) l l' -> MaxHeap_tree_up t ->
-  exists t', (clos_refl_trans tree_up_succeed) t t' /\ list_on_tree_state l' t' /\ MaxHeap_tree_up t'.
-Proof.
-Admitted. *)
-
-Lemma Down_tree_list_fail: forall (l: list_state) (t: tree_state),
-  list_on_tree_state l t -> list_down_fail l l ->
+(* Lemma Down_tree_list_fail: forall (l: list_state) (t: tree_state),
+  Zlength (fst l) >= 2 -> list_on_tree_state l t -> list_down_fail l l ->
   tree_down_fail t t.
 Proof.
   intros.
-  unfold list_down_fail in H0.
   destruct l as [l n].
   destruct t as [pt tr].
   unfold tree_down_fail.
-  revert H0; unfold_RELS_tac; intros; simpl.
-  unfold list_on_tree_state in H.
-  unfold list_on_tree_state_fix in H.
-  simpl in H.
-  destruct H.
-  destruct H0 as [[? ?] ?]; clear H3.
-  unfold left_son_check_list in H0.
-  unfold left_son in H0; simpl in H0.
-  apply not_and_or in H0.
-  unfold right_son_check_list in H2.
-  unfold right_son in H2; simpl in H2.
-  apply not_and_or in H2.
-  unfold legal_list_state in H0; simpl in H0.
-  unfold legal_list_state in H2; simpl in H2.
-  assert (n >= 1). {
-    inversion H; lia.
-  }
-  destruct H2.
-  + apply not_and_or in H2.
-    destruct H2; [ | lia].
+  unfold list_down_fail in H1.
+  revert H1; unfold_RELS_tac; intros; simpl.
+  unfold left_son_check_list in H1.
+  unfold right_son_check_list in H1.
+  destruct H1, H1, H3. clear H2.
+  pose proof legal_list_impl_legal_tree_state _ _ H0 H4.
+  unfold legal_tree_state in H2.
+  destruct H2 as [v [ls [rs]]].
+  
+  unfold left_son in H1; simpl in H1.
+  apply not_and_or in H1.
+  apply not_and_or in H3.
+  split; [| reflexivity].
+  exists v, ls, rs.
+  simpl in H2.
+  split; [tauto|].
+  split; [unfold legal_tree_state; exists v, ls, rs; tauto|].
+  split.
+  + unfold left_son_check_tree.
+    apply or_not_and.
+    unfold list_on_tree_state in H0.
+    unfold list_on_tree_state_fix in H0; simpl in H0.
     destruct H0.
-    - apply not_and_or in H0.
-      destruct H0; [ | lia].
-      inversion H1.
-      * inversion H.
-        
-Admitted.
+    rewrite H2 in H0.
+    inversion H0; subst.
+    destruct ls; [left; tauto|right].
+    simpl.
+    inversion H11; subst.
+    destruct H1.
+    - unfold legal_list_state in H1.
+      simpl in H1.
+      lia.
+    - unfold get_list_val in H1; simpl in H1.
+      replace (n*2) with (2*n) by lia.
+      lia.
+  + unfold right_son_check_tree.
+    apply or_not_and.
+    unfold list_on_tree_state in H0.
+    unfold list_on_tree_state_fix in H0; simpl in H0.
+    destruct H0.
+    rewrite H2 in H0.
+    inversion H0; subst.
+    destruct rs; [left; tauto|right].
+    simpl.
+    inversion H12; subst.
+    unfold right_son in H3.
+    destruct H3.
+    - unfold legal_list_state in H2.
+      simpl in H2.
+      lia.
+    - unfold get_list_val in H2; simpl in H2.
+      replace (n*2) with (2*n) by lia.
+      lia.
+Qed.
 
 Lemma Down_fail_impl_MaxHeap: forall (t: tree_state),
   tree_down_fail t t -> MaxHeap_tree_down t -> MaxHeap (tree_compose (fst t) (snd t)).
 Proof.
-Admitted.
+  intros.
+  destruct t as [lt t].
+  simpl.
+  unfold tree_down_fail in H.
+  revert H; unfold_RELS_tac; intros.
+  destruct H; clear H1.
+  destruct H as [v [ls [rs]]]; simpl in H.
+  destruct H, H1, H2; subst.
+  unfold left_son_check_tree in H2.
+  apply not_and_or in H2.
+  unfold right_son_check_tree in H3.
+  apply not_and_or in H3.
+  destruct lt.
+  + simpl.
+    unfold MaxHeap_tree_down in H0.
+    simpl in H0.
+    destruct H0, H0.
+    unfold MaxHeap_no_rt in H0.
+    destruct H0 as [v0 [ls0 [rs0]]].
+    destruct H0, H5.
+    injection H0; intros; subst.
+    eapply MaxHeap_Node; try reflexivity; try tauto.
+  + destruct p as [[flg val] tr].
+    unfold MaxHeap_tree_down in H0; simpl in H0.
+    apply tree_compose_MaxHeap; [|right].
+    - destruct H0, H0.
+      unfold MaxHeap_no_rt in H0.
+      destruct H0 as [v0 [ls0 [rs0]]].
+      destruct H0, H5.
+      injection H0; intros; subst.
+      eapply MaxHeap_Node; try reflexivity; try tauto.
+    - simpl; destruct H0; tauto.
+Qed.
 
 Lemma Down_tree_list_rel: forall (l l': list_state) (t: tree_state),
-  list_on_tree_state l t -> heap_list_down l l' -> MaxHeap_tree_down t ->
+  Zlength (fst l) >= 2 -> list_on_tree_state l t -> heap_list_down l l' -> MaxHeap_tree_down t ->
   exists t', heap_tree_down t t' /\ list_on_tree_state l' t' /\ MaxHeap (tree_compose (fst t') (snd t')).
 Proof.
-Admitted.
+  intros.
+  pose proof heap_list_down_len _ _ H1.
+  rename H3 into HH.
+  rewrite HH in H.
+  unfold heap_list_down in H1.
+  revert H1; unfold_RELS_tac; intros.
+  destruct H1 as [l0]; destruct H1.
+  pose proof Down_tree_list_succeed_clos_refl_trans _ _ _ H0 H1 H2.
+  destruct H4 as [t0]; destruct H4, H5.
+  assert (list_down_fail l0 l') by tauto.
+  unfold list_down_fail in H3.
+  revert H3; unfold_RELS_tac; intros.
+  destruct H3; subst.
+  pose proof Down_tree_list_fail _ _ H H5 H7.
+  pose proof Down_fail_impl_MaxHeap _ H8 H6.
+  exists t0.
+  split; [| tauto].
+  unfold heap_tree_down.
+  exists t0.
+  unfold_RELS_tac.
+  tauto.
+Qed. *)

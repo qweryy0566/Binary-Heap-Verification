@@ -24,9 +24,16 @@ Admitted.
 Lemma Odd_Div2: forall (n: Z),
   n >= 1 -> (n*2+1)/2 = n.
 Proof.
-Admitted.
+  intros.
+  pose proof Z.div_lt_upper_bound (n*2+1) 2 (n + 1) ltac:(lia) ltac:(lia).
+  pose proof Z.div_le_lower_bound (n*2+1) 2 n ltac:(lia) ltac:(lia).
+  lia.
+Qed.
 
 Lemma Even_Div2: forall (n: Z),
   n >= 1 -> (n*2)/2 = n.
 Proof.
-Admitted.
+  intros.
+  rewrite Z.div_mul by lia.
+  lia.
+Qed.
