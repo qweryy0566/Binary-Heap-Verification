@@ -43,8 +43,9 @@ Definition heap_push: list Z -> Z -> list Z -> Prop :=
     exists (p: Z), heap_list_up (pair (l ++ [val]) (Zlength l)) (pair l' p).
 
 Definition heap_pop: list Z -> list Z -> Prop :=
-  fun l l' =>
-    exists (p: Z), heap_list_down (pair (removelast ([Znth 0 l; Znth (Zlength l - 1) l] ++ (skipn 2%nat l))) 1) (pair l' p).
+  fun l l' => (Zlength l = 2 /\ Zlength l' = 1) \/ (
+    Zlength l > 2 /\
+    (exists (p: Z), heap_list_down (pair (firstn (Z.to_nat ((Zlength l) - 1)) (upd_Znth 1 l (Znth ((Zlength l) - 1) l))) 1) (pair l' p))).
 
 Lemma list_length: forall (p: val) (l: list Z) (size: Z),
   !!(size >= 0) && store_int_array p l size |-- !!(Zlength l = size).

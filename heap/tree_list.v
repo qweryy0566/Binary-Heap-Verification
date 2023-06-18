@@ -725,6 +725,14 @@ Inductive list_nth_on_partial_tree (l: list Z) (n: Z) (p: Z) (lt: partial_tree) 
     list_nth_on_partial_tree l n (p / 2) lt0 -> 
     list_nth_on_partial_tree l n p lt.
 
+Lemma list_nth_on_partial_tree_no_less: forall l n p lt,
+  list_nth_on_partial_tree l n p lt -> p >= n.
+Proof.
+  intros.
+  induction H; [lia | subst].
+  destruct flg; lia.
+Qed.
+
 Lemma list_nth_on_partial_tree_app: forall l n p lt (flg: bool) v t,
   (if flg then
     list_nth_on_partial_tree l (n * 2 + 1) p lt /\ list_nth_on_tree l (n * 2) t /\ Znth n l = v

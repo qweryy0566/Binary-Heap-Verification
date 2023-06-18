@@ -111,7 +111,7 @@ Definition list_down_succeed:
 Definition list_down_fail:
   list_state -> list_state -> Prop :=
   Rels.test(fun l =>
-    ~(left_son_check_list l) /\ ~(right_son_check_list l)).
+    ~(left_son_check_list l) /\ ~(right_son_check_list l) /\ legal_list_state l).
 
 (* Fixpoint iter_n_list_down (n: nat):
   list_state -> list_state -> Prop :=
@@ -124,6 +124,42 @@ Definition heap_list_down:
   list_state -> list_state -> Prop :=
   (clos_refl_trans list_down_succeed) ∘ list_down_fail.
   (* ⋃ (iter_n_list_down). *)
+
+Lemma list_down_succeed_len: forall (l l': list_state),
+  list_down_succeed l l' -> Zlength (fst l) = Zlength (fst l').
+Proof.
+  intros.
+  unfold list_down_succeed in H.
+  destruct H.
+  + unfold left_son_swap in H.
+    unfold list_swap in H.
+    tauto.
+  + destruct H.
+    - destruct H, H0.
+      destruct H1; try unfold left_son_swap in H1;
+      try unfold right_son_swap in H1;
+      unfold list_swap in H1; tauto.
+    - unfold right_son_swap in H.
+      unfold list_swap in H.
+      tauto.
+Qed.
+
+Lemma heap_list_down_len: forall (l l': list_state),
+  heap_list_down l l' -> Zlength (fst l) = Zlength (fst l').
+Proof.
+  intros.
+  unfold heap_list_down in H.
+  revert H; unfold_RELS_tac; intros.
+  destruct H as [l0].
+  destruct H.
+  unfold list_down_fail in H0.
+  revert H0; unfold_RELS_tac; intros.
+  destruct H0; clear H0; subst.
+  induction_1n H.
+  + reflexivity.
+  + rewrite (list_down_succeed_len _ _ H0).
+    apply IHrt.
+Qed.
 
 Ltac simpl_Z :=
   simpl; unfold Zlength, Zlength_aux; unfold Znth; simpl.

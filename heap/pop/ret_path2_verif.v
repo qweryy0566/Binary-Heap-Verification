@@ -19,12 +19,13 @@ Proof.
   rewrite ! upd_Znth_map.
   entailer!.
   split.
-  + unfold pop.
+   unfold pop.
     right.
     split; [lia|].
     assert (size0 = 1) by lia.
     subst.
     unfold heap_pop.
+    
     left.
     split.
     - rewrite Zlength_firstn.

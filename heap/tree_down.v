@@ -14,6 +14,7 @@ Local Open Scope list_scope.
 Require Import cprogs.heap.list_relation.
 Require Import cprogs.heap.definitions.
 Require Import cprogs.heap.tree_list.
+Require Import cprogs.heap.math_prop.
 
 Require Import SetsClass.SetsClass.
 Local Open Scope sets.
@@ -46,66 +47,124 @@ Definition MaxHeap_tree_down(ts: tree_state): Prop :=
   (ls = Leaf \/ MaxHeap_partial_tree_v (fst ts) (get_tree_val ls)) /\
   (rs = Leaf \/ MaxHeap_partial_tree_v (fst ts) (get_tree_val rs))).
 
-(* Lemma left_son_check_equal: forall l n v ls rs,
+Lemma left_son_check_equal: forall l n v ls rs pt,
   list_nth_on_tree l n (Node v ls rs) ->
+  legal_tree_state (pt, ls) ->
   left_son_check_list (l, n) <-> left_son_check_tree v ls rs.
 Proof.
   intros.
+  unfold legal_tree_state in H0; simpl in H0.
+  destruct H0 as [v0 [ls0 [rs0 ?]]].
   inversion H; subst.
+  inversion H6; subst.
   split; intros.
   + unfold left_son_check_list in H0.
     unfold left_son in H0; simpl in H0.
     destruct H0 as [? ?].
     unfold legal_list_state in H0; simpl in H0.
-    unfold get_list_val in H1.
+    unfold get_list_val in H1; simpl in H1.
     unfold left_son_check_tree; split.
     - unfold not; intros.
       discriminate.
     - unfold get_tree_val.
-      unfold get_list_val in H5; simpl in H5.
       replace (n * 2) with (2 * n) by lia.
       lia.
-  + unfold left_son_check_tree in H2; destruct H2.
-    inversion H3; [tauto | subst].
+  + 
+    unfold left_son_check_tree in H0; destruct H0.
     unfold left_son_check_list; unfold left_son; simpl.
     split.
     - unfold legal_list_state; simpl; lia.
     - unfold get_list_val; simpl.
-      unfold get_tree_val in H5.
-      replace (n * 2) with (2 * n) in H5 by lia.
+      unfold get_tree_val in H1.
+      replace (n * 2) with (2 * n) in H1 by lia.
       lia.
 Qed.
 
-Lemma right_son_check_equal: forall l n v ls rs,
+Lemma left_son_check_not: forall l n v ls rs,
   list_nth_on_tree l n (Node v ls rs) ->
+  ~left_son_check_list (l, n) -> ~left_son_check_tree v ls rs.
+Proof.
+  intros.
+  inversion H; subst.
+  unfold left_son_check_list in H0.
+  unfold left_son in H0; simpl in H0.
+  apply not_and_or in H0.
+  unfold left_son_check_tree.
+  apply or_not_and.
+  destruct H0.
+  + left.
+    unfold legal_list_state in H0; simpl in H0.
+    apply not_and_or in H0.
+    destruct H0.  
+    - inversion H6; [ auto | lia].
+    - inversion H6; [ auto | lia].
+  + unfold get_list_val in H0; simpl in H0.
+    destruct ls.
+    - auto.
+    - right.
+      inversion H6; simpl.
+      replace (n * 2) with (2 * n) in H8 by lia.
+      lia.
+Qed.
+
+Lemma right_son_check_equal: forall l n v ls rs pt,
+  list_nth_on_tree l n (Node v ls rs) ->
+  legal_tree_state (pt, rs) ->
   right_son_check_list (l, n) <-> right_son_check_tree v ls rs.
 Proof.
   intros.
-  inversion H; [discriminate | ].
-  inversion H0; subst.
+  unfold legal_tree_state in H0; simpl in H0.
+  destruct H0 as [v0 [ls0 [rs0 ?]]].
+  inversion H; subst.
+  inversion H7; subst.
   split; intros.
-  + unfold right_son_check_list in H2.
-    unfold right_son in H2; simpl in H2.
-    destruct H2 as [? ?].
-    unfold legal_list_state in H2; simpl in H2.
-    inversion H4; [lia | subst].
+  + unfold right_son_check_list in H0.
+    unfold right_son in H0; simpl in H0.
+    destruct H0 as [? ?].
+    unfold legal_list_state in H0; simpl in H0.
+    unfold get_list_val in H1; simpl in H1.
     unfold right_son_check_tree; split.
     - unfold not; intros.
       discriminate.
     - unfold get_tree_val.
-      unfold get_list_val in H5; simpl in H5.
       replace (n * 2) with (2 * n) by lia.
       lia.
-  + unfold right_son_check_tree in H2; destruct H2.
-    inversion H4; [tauto | subst].
+  + unfold right_son_check_tree in H0; destruct H0.
     unfold right_son_check_list; unfold right_son; simpl.
     split.
     - unfold legal_list_state; simpl; lia.
     - unfold get_list_val; simpl.
-      unfold get_tree_val in H5.
-      replace (n * 2) with (2 * n) in H5 by lia.
+      unfold get_tree_val in H1.
+      replace (n * 2) with (2 * n) in H1 by lia.
       lia.
-Qed. *)
+Qed.
+
+Lemma right_son_check_not: forall l n v ls rs,
+  list_nth_on_tree l n (Node v ls rs) ->
+  ~right_son_check_list (l, n) -> ~right_son_check_tree v ls rs.
+Proof.
+  intros.
+  inversion H; subst.
+  unfold right_son_check_list in H0.
+  unfold right_son in H0; simpl in H0.
+  apply not_and_or in H0.
+  unfold right_son_check_tree.
+  apply or_not_and.
+  destruct H0.
+  + left.
+    unfold legal_list_state in H0; simpl in H0.
+    apply not_and_or in H0.
+    destruct H0.  
+    - inversion H7; [ auto | lia].
+    - inversion H7; [ auto | lia].
+  + unfold get_list_val in H0; simpl in H0.
+    destruct rs.
+    - auto.
+    - right.
+      inversion H7; simpl.
+      replace (n * 2 + 1) with (2 * n + 1) in H8 by lia.
+      lia.
+Qed.
 
 Lemma converse_neg: forall (P Q: Prop),
   (P -> Q) -> (~ Q -> ~ P).
@@ -466,10 +525,23 @@ Proof.
     destruct H0.
     remember H8 as H8'; clear HeqH8'.
     apply not_and_or in H8.
+    assert (list_on_tree_state (l, n * 2) ((false, v, rs) :: pt, ls)). {
+      unfold list_on_tree_state; simpl.
+      unfold list_on_tree_state_fix; simpl.
+      split; [ | split].
+      + auto.
+      + eapply cons_partial_tree; eauto; rewrite Z.div_mul by lia; 
+          [lia | lia | auto | auto].
+      + split; auto.  
+    }
+    replace (2 * n) with (n * 2) in H0 by lia.
+    pose proof legal_list_impl_legal_tree_state _ _ H15 H0.
+    remember H16 as H16'; clear HeqH16'.
+    unfold legal_tree_state in H16; simpl in H16.
+    destruct H16 as [v0 [ls0 [rs0 ?]]].
     unfold legal_list_state in H0; simpl in H0.
-    inversion H9.
-    Admitted.
-    (* rewrite H14 in H4.
+    inversion H9; simpl in H17; simpl in H18.
+    rewrite H16 in H4; rewrite H16 in H13.
     destruct H4; [discriminate | unfold get_tree_val in H4].
     exists ((false, v0, rs) :: pt, Node v ls0 rs0).
     split; [| split].
@@ -480,14 +552,16 @@ Proof.
       split; [rewrite <- H12; reflexivity | ].
       left; split; [| split].
       - eapply left_son_check_equal; eauto.
-      - rewrite <- right_son_check_equal; eauto.
+      - eapply right_son_check_not; eauto. 
       - unfold swap_down_left.
         exists v0, ls0, rs0; tauto.
     + eapply swap_down_left_hold; eauto.
     + eapply MaxHeap_tree_down_hold_left; eauto.
-      - unfold get_list_val in H13; simpl in H13.
-        replace (2 * n) with (n * 2) in H13 by lia; lia.
-      - rewrite <- right_son_check_equal; eauto.
+      - unfold get_list_val in H10; simpl in H10.
+        inversion H13; subst.
+        replace (2 * n) with (n * 2) in H10 by lia; lia.
+      - left.
+        eapply right_son_check_not; eauto.
   } {
     destruct H0 as [? [? ?] ].
     remember H0 as H0'; clear HeqH0'.
@@ -498,19 +572,53 @@ Proof.
     unfold right_son in H8; simpl in H8.
     unfold left_son in H11; unfold right_son in H11; simpl in H11.
     destruct H0, H8.
+    remember H8 as H8''; clear HeqH8''.
     unfold legal_list_state in H8; simpl in H8.
-    inversion H9; [lia | ].
-    rewrite H15 in H4.
+    assert (list_on_tree_state (l, n * 2) ((false, v, rs) :: pt, ls)). {
+      unfold list_on_tree_state; simpl.
+      unfold list_on_tree_state_fix; simpl.
+      split; [ | split].
+      + auto.
+      + eapply cons_partial_tree; eauto; rewrite Z.div_mul by lia; 
+          [lia | lia | auto | auto]. 
+      + auto.
+    }
+    assert (list_on_tree_state (l, n * 2 + 1) ((true, v, ls) :: pt, rs)). {
+      unfold list_on_tree_state; simpl.
+      unfold list_on_tree_state_fix; simpl.
+      split; [ | split].
+      + auto.
+      + eapply cons_partial_tree; eauto; try rewrite Odd_Div2 by lia; 
+          [lia | lia | auto | auto | auto].
+        simpl.
+        replace (n * 2 + 1 + -1) with (n * 2) by lia.
+        auto. 
+      + auto.
+    }
+    replace (2 * n) with (n * 2) in H0 by lia.
+    replace (2 * n + 1) with (n * 2 + 1) in H8'' by lia.
+    pose proof legal_list_impl_legal_tree_state _ _ H16 H0.
+    pose proof legal_list_impl_legal_tree_state _ _ H17 H8''.
+    remember H18 as H18'; clear HeqH18'.
+    remember H19 as H19'; clear HeqH19'.
+    unfold legal_tree_state in H18; simpl in H18.
+    unfold legal_tree_state in H19; simpl in H19.
+    destruct H18 as [v0 [ls0 [rs0 ?]]].
+    destruct H19 as [v1 [ls1 [rs1 ?]]].
+    rewrite H18 in H4.
     destruct H4; [discriminate | unfold get_tree_val in H4].
-    inversion H10; [lia | ].
-    rewrite H20 in H5.
+    rewrite H19 in H5.
     destruct H5; [discriminate | unfold get_tree_val in H5].
-    destruct H11; destruct H11 as [H11a H11b].
+    destruct H9; destruct H9 as [H9a H9b].
     + exists ((false, v0, rs) :: pt, Node v ls0 rs0).
       assert (get_tree_val rs <= get_tree_val ls). {
-        rewrite H15, H20; unfold get_tree_val.
-        unfold get_list_val in H11a; simpl in H11a.
-        replace (2 * n) with (n * 2) in H11a by lia.
+        rewrite H18, H19; unfold get_tree_val.
+        unfold get_list_val in H9a; simpl in H9a.
+        replace (2 * n) with (n * 2) in H9a by lia.
+        rewrite H18 in H13.
+        rewrite H19 in H14.
+        inversion H13.
+        inversion H14.
         lia.
       }
       split; [| split].
@@ -527,20 +635,29 @@ Proof.
           unfold swap_down_left.
           exists v0, ls0, rs0; tauto.
       - eapply swap_down_left_hold; eauto.
-      - eapply MaxHeap_tree_down_hold_left; eauto.
-        * unfold get_list_val in H14; simpl in H14.
-          replace (2 * n) with (n * 2) in H14 by lia.
-          unfold get_list_val in H11a; simpl in H11a.
-          replace (2 * n) with (n * 2) in H11a by lia.
+      - unfold get_list_val in H15; simpl in H15.
+        replace (2 * n) with (n * 2) in H15 by lia.
+        unfold get_list_val in H9a; simpl in H9a.
+        replace (2 * n) with (n * 2) in H9a by lia.
+        eapply MaxHeap_tree_down_hold_left; eauto.
+        * rewrite H18 in H13.
+          inversion H13.
           lia.
-        * rewrite H15 in H11.
-          unfold get_tree_val in H11 at 2.
+        * rewrite H18 in H13.
+          rewrite H19 in H14.
+          inversion H13.
+          inversion H14.
+          rewrite H19; unfold get_tree_val.
           lia.
     + exists ((true, v1, ls) :: pt, Node v ls1 rs1).
       assert (get_tree_val rs > get_tree_val ls). {
-        rewrite H15, H20; unfold get_tree_val.
-        unfold get_list_val in H11a; simpl in H11a.
-        replace (2 * n) with (n * 2) in H11a by lia.
+        rewrite H18, H19; unfold get_tree_val.
+        unfold get_list_val in H9a; simpl in H9a.
+        replace (2 * n) with (n * 2) in H9a by lia.
+        rewrite H18 in H13.
+        rewrite H19 in H14.
+        inversion H13.
+        inversion H14.
         lia.
       }
       split; [| split].
@@ -557,14 +674,22 @@ Proof.
           unfold swap_down_right.
           exists v1, ls1, rs1; tauto.
       - eapply swap_down_right_hold; eauto.
-      - eapply MaxHeap_tree_down_hold_right; eauto.
-        * unfold get_list_val in H14; simpl in H14.
-          replace (2 * n) with (n * 2) in H14 by lia.
-          unfold get_list_val in H11a; simpl in H11a.
-          replace (2 * n) with (n * 2) in H11a by lia.
+      - rewrite H18 in H13.
+        rewrite H19 in H14.
+        inversion H13.
+        inversion H14.
+        eapply MaxHeap_tree_down_hold_right; eauto.
+        * unfold get_list_val in H15; simpl in H15.
+          replace (2 * n) with (n * 2) in H15 by lia.
+          unfold get_list_val in H9a; simpl in H9a.
+          replace (2 * n) with (n * 2) in H9a by lia.
           lia.
-        * rewrite H20 in H11.
-          unfold get_tree_val in H11 at 1.
+        * rewrite H18.
+          unfold get_tree_val.
+          unfold get_list_val in H15; simpl in H15.
+          replace (2 * n) with (n * 2) in H15 by lia.
+          unfold get_list_val in H9a; simpl in H9a.
+          replace (2 * n) with (n * 2) in H9a by lia. 
           lia.
   } {
     destruct H0 as [? [? ?] ].
@@ -574,9 +699,26 @@ Proof.
     unfold right_son in H8; simpl in H8.
     destruct H8.
     apply not_and_or in H0.
+    remember H8 as H8''. clear HeqH8''.
     unfold legal_list_state in H8; simpl in H8.
-    inversion H10; [lia | ].
-    rewrite H14 in H5.
+    assert (list_on_tree_state (l, n * 2 + 1) ((true, v, ls) :: pt, rs)). {
+      unfold list_on_tree_state; simpl.
+      unfold list_on_tree_state_fix; simpl.
+      split; [ | split].
+      + auto.
+      + eapply cons_partial_tree; eauto; try rewrite Odd_Div2 by lia; 
+          [lia | lia | auto | auto | auto].
+        simpl.
+        replace (n * 2 + 1 + -1) with (n * 2) by lia.
+        auto. 
+      + auto.
+    }
+    replace (2 * n) with (n * 2) in H8'' by lia.
+    pose proof legal_list_impl_legal_tree_state _ _ H15 H8''.
+    remember H16 as H16'; clear HeqH16'.
+    unfold legal_tree_state in H16.
+    destruct H16 as [v0 [ls0 [rs0 ?]]]; simpl in H16.
+    rewrite H16 in H5; rewrite H16 in H14.
     destruct H5; [discriminate | unfold get_tree_val in H5].
     exists ((true, v0, ls) :: pt, Node v ls0 rs0).
     split; [| split].
@@ -586,17 +728,20 @@ Proof.
       exists v, ls, rs.
       split; [rewrite <- H12; reflexivity | ].
       right; left; split; [| split].
-      - rewrite <- left_son_check_equal; eauto.
+      - eapply left_son_check_not; eauto.
       - eapply right_son_check_equal; eauto.
       - unfold swap_down_right.
         exists v0, ls0, rs0; tauto.
     + eapply swap_down_right_hold; eauto.
     + eapply MaxHeap_tree_down_hold_right; eauto.
-      - unfold get_list_val in H13; simpl in H13.
-        replace (2 * n) with (n * 2) in H13 by lia; lia.
-      - rewrite <- left_son_check_equal; eauto.
+      - unfold get_list_val in H10; simpl in H10.
+        replace (2 * n) with (n * 2) in H10 by lia.
+        inversion H14.
+        lia.
+      - left.
+        eapply left_son_check_not; eauto.
   }
-Qed. *)
+Qed.
 
 Lemma Down_tree_list_succeed_clos_refl_trans: forall (l l': list_state) (t: tree_state),
   list_on_tree_state l t -> (clos_refl_trans list_down_succeed) l l' -> MaxHeap_tree_down t ->
@@ -623,7 +768,7 @@ Proof.
     - tauto.
 Qed.
 
-(* Lemma Down_tree_list_fail: forall (l: list_state) (t: tree_state),
+Lemma Down_tree_list_fail: forall (l: list_state) (t: tree_state),
   Zlength (fst l) >= 2 -> list_on_tree_state l t -> list_down_fail l l ->
   tree_down_fail t t.
 Proof.
@@ -639,7 +784,6 @@ Proof.
   pose proof legal_list_impl_legal_tree_state _ _ H0 H4.
   unfold legal_tree_state in H2.
   destruct H2 as [v [ls [rs]]].
-  
   unfold left_son in H1; simpl in H1.
   apply not_and_or in H1.
   apply not_and_or in H3.
@@ -748,4 +892,4 @@ Proof.
   exists t0.
   unfold_RELS_tac.
   tauto.
-Qed. *)
+Qed.

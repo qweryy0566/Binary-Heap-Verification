@@ -254,7 +254,7 @@ Proof.
   + simpl.
     unfold list_on_tree_state in H.
     unfold list_on_tree_state_fix in H; simpl in H.
-    destruct H, H1, H2. 
+    destruct H, H1, H2.
     apply list_on_partial_tree_app; tauto.
   + simpl.
     remember (full_tree_b (d - 1) t1) as HQ.
@@ -294,7 +294,6 @@ Proof.
       * simpl; tauto.
       * tauto.
 Qed.
-
 
 Lemma tree_to_partial_tree_get: forall (t tr: tree) (lt: partial_tree) (flg: bool) (v d: Z), 
   tree_to_partial_tree_fix (lt ++ [(flg,v,tr)]) t d = (tree_to_partial_tree_fix lt t d) ++ [(flg,v,tr)].

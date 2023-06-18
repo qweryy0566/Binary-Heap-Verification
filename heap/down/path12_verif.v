@@ -77,6 +77,7 @@ Proof.
   2: apply all_int_Znth; [tauto | lia].
   2: apply all_int_Znth; [tauto | lia].
   rewrite !Znth_firstn by lia.
+  rewrite !Zlength_firstn by lia.
   lia.
 Qed.
 
