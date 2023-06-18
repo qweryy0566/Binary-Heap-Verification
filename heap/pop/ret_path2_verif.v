@@ -25,7 +25,6 @@ Proof.
     assert (size0 = 1) by lia.
     subst.
     unfold heap_pop.
-    
     left.
     split.
     - rewrite Zlength_firstn.
@@ -33,9 +32,9 @@ Proof.
     - rewrite Zlength_firstn.
       rewrite upd_Znth_Zlength; [|lia].
       lia.
-  + split.
-    - destruct size0; [lia | unfold pop_length; reflexivity| lia ].
-    - destruct size0; [lia | unfold pop_result; reflexivity| lia ].
+    - split.
+    * destruct size0; [lia | unfold pop_length; reflexivity| lia ].
+    * destruct size0; [lia | unfold pop_result; reflexivity| lia ].
 Qed.
 
 End SH_Proof.
