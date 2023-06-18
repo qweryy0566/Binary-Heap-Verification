@@ -602,29 +602,6 @@ Proof.
   inversion H; [auto | lia].
 Qed.
 
-
-Lemma list_nth_on_tree_coin: forall tr l n len d,
-  complete_tree_pop d tr ->
-  list_nth_on_tree l n tr ->
-  len >= last_index d n tr ->
-  n < len <= Zlength l ->
-  list_nth_on_tree (firstn (Z.to_nat len) l) n tr.
-Proof.
-  intros tr.
-  induction tr; simpl; intros.
-  + apply list_nth_on_tree_Leaf.
-  + inversion H; subst.
-    - rewrite full_tree_equiv1 in H7.
-      rewrite H7 in H1.
-      inversion H0; subst.
-      apply list_nth_on_tree_Node.
-      * rewrite Zlength_firstn; lia.
-      * rewrite Znth_firstn; [auto | lia].
-      * assert (n * 2 >= len \/ n * 2 < len) by lia.
-        destruct H3.
-        ++ pose proof list_nth_on_tree_impl_leaf.
-Admitted.
-
 Lemma list_on_tree_coincidence_r: forall v ls rs l p d,
   list_nth_on_tree l p (Node v ls rs) ->
   complete_tree_pop d (Node v ls rs) ->
@@ -719,164 +696,6 @@ Proof.
       * rewrite Odd_Div2 by lia; auto.    
 Qed.
 
-Lemma list_on_tree_impl_state: forall (l: list Z) (ls rs: tree) (v: Z),
-  Zlength l > 2 -> list_on_tree l (Node v ls rs) ->
-  exists d, list_on_tree_state (firstn (Z.to_nat (Zlength l - 1)) (upd_Znth 1 l (Znth (Zlength l - 1) l)), 1) (nil, tree_cut_last ls rs d) /\  complete_tree_pop d (Node v ls rs).
-Proof.
-  intros.
-  unfold list_on_tree in H0.
-  destruct H0 as [? [? ?]].
-  rewrite <- complete_tree_equality in H2.
-  destruct H2 as [d].
-  exists d; split; [| auto].
-  unfold list_on_tree_state; simpl.
-  unfold list_on_tree_state_fix.
-  simpl.
-  split; [| split; [| split]].
-  2: {
-    apply nil_partial_tree; tauto.
-  }
-  1: {
-    unfold tree_cut_last.
-    inversion H2; subst.
-    + rewrite full_tree_equiv1 in H7.
-      rewrite H7.
-      assert (Zlength l - 1 = last_index d 1 (Node v ls rs)). {
-        rewrite tree_last_index_size by auto; lia.
-      }
-      assert (ls <> Leaf). {
-        rewrite <- full_tree_equiv1 in H7.
-        pose proof full_tree_nonneg _ _ H7.
-        eapply complete_tree_pop_not_leaf; eauto; lia.
-      }
-      apply list_nth_on_tree_Node.
-      - rewrite Zlength_firstn.
-        rewrite upd_Znth_Zlength by lia.
-        lia.
-      - rewrite Znth_firstn by lia.
-        rewrite upd_Znth_same by lia.
-        unfold tree_to_partial_tree_pop.
-        rewrite get_last_val_coincidence with (pt2 := (false, v, rs) :: nil); auto.
-        replace (tree_to_partial_tree_pop_fix [(false, v, rs)] ls (d - 1)) with (tree_to_partial_tree_pop_fix nil (Node v ls rs) d).
-        2: { simpl; rewrite H7; auto. }
-        erewrite list_on_tree_last_val; eauto.
-        * rewrite H3.
-          reflexivity.
-        * unfold list_on_tree_state; simpl.
-          unfold list_on_tree_state_fix; simpl.
-          split; [ | split; [ | split]].
-          -- auto.
-          -- apply nil_partial_tree; auto.
-          -- simpl in H1; lia. 
-          -- apply complete_tree_equality.
-             exists d; auto.
-      - apply list_nth_on_tree_decompose with (p := last_index d 1 (Node v ls rs)).
-        1: {apply list_nth_on_tree_Leaf. }
-        unfold tree_to_partial_tree_pop.
-        simpl.
-        rewrite H7.
-        fold (skipn 1 (tree_to_partial_tree_pop_fix [] ls (d - 1))).
-        rewrite <- sublist_firstn.
-        rewrite sublist_upd_Znth_lr by lia.
-        rewrite sublist_firstn.
-        apply list_nth_on_partial_tree_update; [ | rewrite Zlength_firstn by lia; lia | lia].
-        eapply list_on_tree_to_pt_pop; eauto.
-        * inversion H0; replace (1 * 2) with 2 in H12 by lia; auto.
-        * apply nth_partial_tree_nil; auto.   
-      - admit.
-    + pose proof complete_tree_pop_not_fullb _ _ H7.
-      replace (d - 1 - 1) with (d - 2) in H3 by lia.
-      rewrite H3.
-      apply list_nth_on_tree_Node.
-      - rewrite Zlength_firstn.
-        rewrite upd_Znth_Zlength by lia.
-        lia.
-      - rewrite Znth_firstn by lia.
-        rewrite upd_Znth_same by lia.
-        unfold tree_to_partial_tree_pop.
-        assert (rs <> Leaf). {
-          destruct (classic (ls = Leaf)).
-          + inversion H5; [ | rewrite H4 in H9; discriminate].
-            inversion H7.
-            2: { pose proof full_tree_nonneg _ _ H10; lia. }
-            2: { pose proof full_tree_nonneg _ _ H9; lia. }
-            subst.
-            simpl in H1; lia.
-          + give_up. 
-        }
-        assert (Zlength l - 1 = last_index d 1 (Node v ls rs)). {
-          rewrite tree_last_index_size by auto; lia.
-        }
-        rewrite get_last_val_coincidence with (pt2 := (true, v, ls) :: nil); auto.
-        replace (get_last_val (tree_to_partial_tree_pop_fix [(true, v, ls)] rs (d - 1))) with (get_last_val (tree_to_partial_tree_pop_fix nil (Node v ls rs) d)).
-        2: { simpl; rewrite H3. auto. }
-        erewrite list_on_tree_last_val; eauto.
-        * rewrite H6.
-          reflexivity.
-        * unfold list_on_tree_state; simpl.
-          unfold list_on_tree_state_fix; simpl.
-          split; [ | split; [ | split]].
-          -- auto.
-          -- apply nil_partial_tree; auto.
-          -- simpl in H1; lia. 
-          -- apply complete_tree_equality.
-             exists d; auto.
-      - admit.
-      - admit. 
-  } 
-
-Admitted.
-
-Lemma MaxHeap_tree_down_state: forall (ls rs: tree) (d v: Z),
-  tree_size (Node v ls rs) >= 2 -> MaxHeap (Node v ls rs) -> complete_tree_pop d (Node v ls rs) ->
-  MaxHeap_tree_down ([], tree_cut_last ls rs d).
-Proof.
-  intros.
-  unfold MaxHeap_tree_down; simpl.
-  split; [apply MaxHeap_partial_tree_v_nil; reflexivity|].
-  split.
-  + unfold tree_cut_last.
-    inversion H0; [discriminate|].
-    unfold MaxHeap_no_rt.
-    inversion H1; subst.
-    - apply full_tree_equiv1 in H11.
-      rewrite H11.
-      exists (get_last_val (tree_to_partial_tree_pop ls (d - 1))), (tree_compose (skipn 1 (tree_to_partial_tree_pop ls (d - 1))) Leaf), rs.
-      injection H2; intros; subst.
-      split; [tauto|].
-      split; [|tauto].
-      apply tree_compose_MaxHeap; [apply MaxHeap_Leaf; tauto|left].
-      split; [reflexivity|].
-      apply MaxHeap_tree_partial_tree_skip.
-      unfold tree_to_partial_tree_pop.
-      apply MaxHeap_tree_partial_hold; try tauto; [|unfold MaxHeap_partial_tree; tauto].
-      destruct H5; [left;tauto|right].
-      apply MaxHeap_partial_tree_v_nil.
-      reflexivity.
-    - pose proof complete_tree_pop_not_fullb _ _ H11.
-      replace (d-1-1) with (d-2) in H7 by lia.
-      rewrite H7.
-      exists (get_last_val (tree_to_partial_tree_pop rs (d - 1))), ls, (tree_compose (skipn 1 (tree_to_partial_tree_pop rs (d - 1))) Leaf).
-      injection H2; intros; subst.
-      split; [tauto|].
-      split; [tauto|].
-      apply tree_compose_MaxHeap; [apply MaxHeap_Leaf; tauto|left].
-      split; [reflexivity|].
-      apply MaxHeap_tree_partial_tree_skip.
-      unfold tree_to_partial_tree_pop.
-      apply MaxHeap_tree_partial_hold; try tauto; [|unfold MaxHeap_partial_tree; tauto].
-      destruct H6; [left;tauto|right].
-      apply MaxHeap_partial_tree_v_nil.
-      reflexivity.
-  + pose proof tree_cut_last_size ls rs v d H H1.
-    simpl in H.
-    pose proof tree_not_emp (tree_cut_last ls rs d) ltac:(lia).
-    destruct H3 as [v0 [ls0 [rs0]]].
-    exists v0, ls0, rs0.
-    split; [tauto|].
-    split; right; apply MaxHeap_partial_tree_v_nil; tauto.
-Qed.
-
 Lemma complete_tree_pop_holds: forall (t: tree)(d: Z), 
    t <> Leaf -> complete_tree_pop d t -> complete_tree_push d (tree_compose (skipn 1%nat (tree_to_partial_tree_pop t d)) Leaf).
 Proof.
@@ -942,6 +761,212 @@ Proof.
     inversion H2.
     - rewrite <- H5 in HH; simpl in HH; lia.
     - pose proof full_tree_gt_0 _ _ H5; lia.
+Qed.
+
+Lemma list_on_tree_impl_state: forall (l: list Z) (ls rs: tree) (v: Z),
+  Zlength l > 2 -> list_on_tree l (Node v ls rs) ->
+  exists d, list_on_tree_state (firstn (Z.to_nat (Zlength l - 1)) (upd_Znth 1 l (Znth (Zlength l - 1) l)), 1) (nil, tree_cut_last ls rs d) /\  complete_tree_pop d (Node v ls rs).
+Proof.
+  intros.
+  unfold list_on_tree in H0.
+  destruct H0 as [? [? ?]].
+  rewrite <- complete_tree_equality in H2.
+  destruct H2 as [d].
+  exists d; split; [| auto].
+  unfold list_on_tree_state; simpl.
+  unfold list_on_tree_state_fix.
+  simpl.
+  split; [| split; [| split]].
+  2: {
+    apply nil_partial_tree; tauto.
+  }
+  1: {
+    unfold tree_cut_last.
+    inversion H2; subst.
+    + rewrite full_tree_equiv1 in H7.
+      rewrite H7.
+      assert (Zlength l - 1 = last_index d 1 (Node v ls rs)). {
+        rewrite tree_last_index_size by auto; lia.
+      }
+      assert (ls <> Leaf). {
+        rewrite <- full_tree_equiv1 in H7.
+        pose proof full_tree_nonneg _ _ H7.
+        eapply complete_tree_pop_not_leaf; eauto; lia.
+      }
+      apply list_nth_on_tree_Node.
+      - rewrite Zlength_firstn.
+        rewrite upd_Znth_Zlength by lia.
+        lia.
+      - rewrite Znth_firstn by lia.
+        rewrite upd_Znth_same by lia.
+        unfold tree_to_partial_tree_pop.
+        rewrite get_last_val_coincidence with (pt2 := (false, v, rs) :: nil); auto.
+        replace (tree_to_partial_tree_pop_fix [(false, v, rs)] ls (d - 1)) with (tree_to_partial_tree_pop_fix nil (Node v ls rs) d).
+        2: { simpl; rewrite H7; auto. }
+        erewrite list_on_tree_last_val; eauto.
+        * rewrite H3.
+          reflexivity.
+        * unfold list_on_tree_state; simpl.
+          unfold list_on_tree_state_fix; simpl.
+          split; [ | split; [ | split]].
+          -- auto.
+          -- apply nil_partial_tree; auto.
+          -- simpl in H1; lia. 
+          -- apply complete_tree_equality.
+             exists d; auto.
+      - apply list_nth_on_tree_decompose with (p := last_index d 1 (Node v ls rs)).
+        1: {apply list_nth_on_tree_Leaf. }
+        unfold tree_to_partial_tree_pop.
+        simpl.
+        rewrite H7.
+        fold (skipn 1 (tree_to_partial_tree_pop_fix [] ls (d - 1))).
+        rewrite <- sublist_firstn.
+        rewrite sublist_upd_Znth_lr by lia.
+        rewrite sublist_firstn.
+        apply list_nth_on_partial_tree_update; [ | rewrite Zlength_firstn by lia; lia | lia].
+        eapply list_on_tree_to_pt_pop; eauto.
+        * inversion H0; replace (1 * 2) with 2 in H12 by lia; auto.
+        * apply nth_partial_tree_nil; auto.   
+      - rewrite <- sublist_firstn.
+        rewrite sublist_upd_Znth_lr by lia.
+        rewrite sublist_firstn.
+        apply list_nth_on_tree_update_less; [ | lia].
+        eapply list_on_tree_coincidence_r; eauto.
+    + pose proof complete_tree_pop_not_fullb _ _ H7.
+      replace (d - 1 - 1) with (d - 2) in H3 by lia.
+      rewrite H3.
+      apply list_nth_on_tree_Node.
+      - rewrite Zlength_firstn.
+        rewrite upd_Znth_Zlength by lia.
+        lia.
+      - rewrite Znth_firstn by lia.
+        rewrite upd_Znth_same by lia.
+        unfold tree_to_partial_tree_pop.
+        assert (rs <> Leaf). {
+          destruct (classic (ls = Leaf)).
+          + inversion H5; [ | rewrite H4 in H9; discriminate].
+            inversion H7.
+            2: { pose proof full_tree_nonneg _ _ H10; lia. }
+            2: { pose proof full_tree_nonneg _ _ H9; lia. }
+            subst.
+            simpl in H1; lia.
+          + destruct rs.
+            - inversion H7.
+              inversion H5.
+              2: { pose proof full_tree_nonneg _ _ H9; lia. }
+              rewrite H9 in H4.
+              contradiction.
+            - unfold not; intros; discriminate.
+        }
+        assert (Zlength l - 1 = last_index d 1 (Node v ls rs)). {
+          rewrite tree_last_index_size by auto; lia.
+        }
+        rewrite get_last_val_coincidence with (pt2 := (true, v, ls) :: nil); auto.
+        replace (get_last_val (tree_to_partial_tree_pop_fix [(true, v, ls)] rs (d - 1))) with (get_last_val (tree_to_partial_tree_pop_fix nil (Node v ls rs) d)).
+        2: { simpl; rewrite H3. auto. }
+        erewrite list_on_tree_last_val; eauto.
+        * rewrite H6.
+          reflexivity.
+        * unfold list_on_tree_state; simpl.
+          unfold list_on_tree_state_fix; simpl.
+          split; [ | split; [ | split]].
+          -- auto.
+          -- apply nil_partial_tree; auto.
+          -- simpl in H1; lia. 
+          -- apply complete_tree_equality.
+             exists d; auto.
+      - rewrite <- sublist_firstn.
+        rewrite sublist_upd_Znth_lr by lia.
+        rewrite sublist_firstn.
+        apply list_nth_on_tree_update_less; [ | lia].
+        eapply list_on_tree_coincidence_l; eauto.
+      - apply list_nth_on_tree_decompose with (p := last_index d 1 (Node v ls rs)).
+        1: {apply list_nth_on_tree_Leaf. }
+        unfold tree_to_partial_tree_pop.
+        simpl.
+        rewrite H3.
+        fold (skipn 1 (tree_to_partial_tree_pop_fix [] rs (d - 1))).
+        rewrite <- sublist_firstn.
+        rewrite sublist_upd_Znth_lr by lia.
+        rewrite sublist_firstn.
+        apply list_nth_on_partial_tree_update; [ | rewrite Zlength_firstn by lia; lia | lia].
+        eapply list_on_tree_to_pt_pop; eauto.
+        * destruct rs.
+          2: { unfold not; intros; discriminate. }
+          inversion H7.
+          rewrite H4 in H5.
+          inversion H5.
+          2: { pose proof full_tree_nonneg _ _ H8; lia. }
+          subst.
+          simpl in H1; lia.
+        * inversion H0. replace (1 * 2) with 2 in H12 by lia. auto.
+        * apply nth_partial_tree_nil; auto.   
+  }
+  - rewrite Zlength_firstn.
+    replace (Z.max 0 (Zlength l - 1)) with (Zlength l - 1)by lia.
+    rewrite upd_Znth_Zlength; [|lia].
+    replace (Z.min (Zlength l - 1) (Zlength l)) with(Zlength l - 1) by lia.
+    simpl.
+    rewrite (tree_cut_last_size _ _ v _).
+    * simpl in H1; lia.
+    * simpl in H1. 
+      simpl.
+      lia.
+    * tauto.
+  - exists d.
+    apply (complete_tree_pop_holds_all _ _ _ v).
+    * tauto.
+    * lia. 
+Qed.
+
+Lemma MaxHeap_tree_down_state: forall (ls rs: tree) (d v: Z),
+  tree_size (Node v ls rs) >= 2 -> MaxHeap (Node v ls rs) -> complete_tree_pop d (Node v ls rs) ->
+  MaxHeap_tree_down ([], tree_cut_last ls rs d).
+Proof.
+  intros.
+  unfold MaxHeap_tree_down; simpl.
+  split; [apply MaxHeap_partial_tree_v_nil; reflexivity|].
+  split.
+  + unfold tree_cut_last.
+    inversion H0; [discriminate|].
+    unfold MaxHeap_no_rt.
+    inversion H1; subst.
+    - apply full_tree_equiv1 in H11.
+      rewrite H11.
+      exists (get_last_val (tree_to_partial_tree_pop ls (d - 1))), (tree_compose (skipn 1 (tree_to_partial_tree_pop ls (d - 1))) Leaf), rs.
+      injection H2; intros; subst.
+      split; [tauto|].
+      split; [|tauto].
+      apply tree_compose_MaxHeap; [apply MaxHeap_Leaf; tauto|left].
+      split; [reflexivity|].
+      apply MaxHeap_tree_partial_tree_skip.
+      unfold tree_to_partial_tree_pop.
+      apply MaxHeap_tree_partial_hold; try tauto; [|unfold MaxHeap_partial_tree; tauto].
+      destruct H5; [left;tauto|right].
+      apply MaxHeap_partial_tree_v_nil.
+      reflexivity.
+    - pose proof complete_tree_pop_not_fullb _ _ H11.
+      replace (d-1-1) with (d-2) in H7 by lia.
+      rewrite H7.
+      exists (get_last_val (tree_to_partial_tree_pop rs (d - 1))), ls, (tree_compose (skipn 1 (tree_to_partial_tree_pop rs (d - 1))) Leaf).
+      injection H2; intros; subst.
+      split; [tauto|].
+      split; [tauto|].
+      apply tree_compose_MaxHeap; [apply MaxHeap_Leaf; tauto|left].
+      split; [reflexivity|].
+      apply MaxHeap_tree_partial_tree_skip.
+      unfold tree_to_partial_tree_pop.
+      apply MaxHeap_tree_partial_hold; try tauto; [|unfold MaxHeap_partial_tree; tauto].
+      destruct H6; [left;tauto|right].
+      apply MaxHeap_partial_tree_v_nil.
+      reflexivity.
+  + pose proof tree_cut_last_size ls rs v d H H1.
+    simpl in H.
+    pose proof tree_not_emp (tree_cut_last ls rs d) ltac:(lia).
+    destruct H3 as [v0 [ls0 [rs0]]].
+    exists v0, ls0, rs0.
+    split; [tauto|].
+    split; right; apply MaxHeap_partial_tree_v_nil; tauto.
 Qed.
 
 Lemma Pop_tree_list_rel: forall (l l': list Z) (t: tree),

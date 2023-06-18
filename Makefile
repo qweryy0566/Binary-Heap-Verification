@@ -15,6 +15,7 @@ CPROGS = heap
 CPROG_FILES  = $(CPROGS:%=$(CPROGSDIR)/%/program.v)
 CDEF_FILES   = $(CPROGS:%=$(CPROGSDIR)/%/definitions.v)
 CANNOT_FILES = $(CPROGS:%=$(CPROGSDIR)/%/annotation.v)
+TREE_FILES   = $(CPROGS:%=$(CPROGSDIR)/%/tree*.v)
 
 CVERIF_FILES = $(CPROG_FUNCS:%=$(CPROGSDIR)/%/verif.v)
 CPROG_PATH_FILES = $(CPROG_PATHS:%=$(CPROGSDIR)/%.v)
@@ -30,7 +31,7 @@ COQFLAGS = -w -omega-is-deprecated $(INCLUDE_ACLIGHT) $(INCLUDE_VST) $(INCLUDE_C
 
 FILES =  \
   $(CPROG_FILES) $(CDEF_FILES) $(CANNOT_FILES) \
-  $(CVERIF_FILES) $(CPROG_PATH_FILES) $(CPROG_PATH_VERIF_FILES)
+  $(CVERIF_FILES) $(CPROG_PATH_FILES) $(CPROG_PATH_VERIF_FILES) $(TREE_FILES)
 
 all:
 	@test -f .depend || $(MAKE) depend
