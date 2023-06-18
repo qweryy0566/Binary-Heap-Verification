@@ -19,7 +19,14 @@ Import SetsNotation.
 Lemma Div_2_gt_0: forall (n: Z), 
   1 <= n/2 -> n/2 < n.
 Proof.
-Admitted.
+  intros.
+  assert (n >= 1 \/ n <= 0) by lia.
+  destruct H0.
+  + pose proof Z.div_lt_upper_bound n 2 n ltac:(lia) ltac:(lia).
+    lia.
+  + pose proof Z.div_le_upper_bound n 2 0 ltac:(lia) ltac:(lia).
+    lia.    
+Qed.
 
 Lemma Odd_Div2: forall (n: Z),
   n >= 1 -> (n*2+1)/2 = n.
