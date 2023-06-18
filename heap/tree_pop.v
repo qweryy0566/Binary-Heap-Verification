@@ -45,7 +45,7 @@ Definition tree_cut_last(ls rs: tree) (d: Z): tree :=
 
 Definition tree_pop: tree -> tree -> Prop :=
   fun t t' => (tree_size t <= 1  /\ t' = Leaf) \/
-    (exists v ls rs ts d, t = (Node v ls rs) /\ complete_tree_pop d t /\ heap_tree_down (nil,(tree_cut_last ls rs d)) ts /\ t' = (tree_compose (fst ts) (snd ts))).
+    (tree_size t >= 2 /\ exists v ls rs ts d, t = (Node v ls rs) /\ complete_tree_pop d t /\ heap_tree_down (nil,(tree_cut_last ls rs d)) ts /\ t' = (tree_compose (fst ts) (snd ts))).
 
 Lemma list_on_tree_impl_state: forall (l: list Z) (ls rs: tree) (v: Z),
   Zlength l > 2 -> list_on_tree l (Node v ls rs) ->
@@ -417,6 +417,8 @@ Proof.
     split; [tauto|].
     split; [tauto|].
     unfold tree_pop; right.
+    destruct H, H11.
+    split; [lia|].
     exists v, ls, rs, t', d.
     tauto.
 Qed.
